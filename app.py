@@ -1,28 +1,32 @@
 """
-BudgetCraft — Local Mac App
-Run:   python app.py
-Open:  http://127.0.0.1:5000
-Login: admin / admindr
+FinHub — Personal Finance Portal
+Multi-user edition with per-account data isolation.
+Deploy: Render.com (web service, free tier)
 """
-import os, io, sqlite3, uuid
+import os, io, sqlite3, uuid, hashlib, secrets
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import (Flask, g, jsonify, request, render_template,
                    send_file, session, redirect, url_for)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH  = os.path.join(BASE_DIR, 'budget.db')
+# Render mounts a persistent disk at /data; fall back to local for dev
+DATA_DIR = os.environ.get('DATA_DIR', BASE_DIR)
+DB_PATH  = os.path.join(DATA_DIR, 'budget.db')
 
 app = Flask(__name__)
-app.secret_key = 'budgetcraft-local-secret-key-2025'
+# Use env var SECRET_KEY on Render; fallback for local dev
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False   # local http — no HTTPS needed
-app.config['SESSION_COOKIE_PATH'] = '/'       # valid for all paths
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+# Secure cookies on Render (HTTPS); plain HTTP locally
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER', False)
+app.config['SESSION_COOKIE_PATH'] = '/'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
-ADMIN_USERNAME = 'admin'
-ADMIN_PASSWORD = 'admindr'
+# ── Signup control ─────────────────────────────────────────────────────────────
+# Set ALLOW_SIGNUP=false in Render env to close public registration
+ALLOW_SIGNUP = os.environ.get('ALLOW_SIGNUP', 'true').lower() != 'false'
 
 CATEGORIES = ['income','insurance','investments','expenses','discretionary',
               'credit_card','loan']
@@ -52,11 +56,35 @@ def q(sql, params=(), fetchall=False, fetchone=False):
     db.commit()
     return None
 
+def hash_password(pw):
+    """PBKDF2-HMAC-SHA256 with random salt."""
+    salt = secrets.token_hex(16)
+    h = hashlib.pbkdf2_hmac('sha256', pw.encode(), salt.encode(), 260000)
+    return f'{salt}${h.hex()}'
+
+def verify_password(pw, stored):
+    """Verify a password against stored hash."""
+    try:
+        salt, hx = stored.split('$', 1)
+        h = hashlib.pbkdf2_hmac('sha256', pw.encode(), salt.encode(), 260000)
+        return secrets.compare_digest(h.hex(), hx)
+    except Exception:
+        return False
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.executescript('''
+        CREATE TABLE IF NOT EXISTS users (
+            id          TEXT PRIMARY KEY,
+            username    TEXT NOT NULL UNIQUE,
+            email       TEXT NOT NULL DEFAULT '',
+            password_hash TEXT NOT NULL,
+            is_admin    INTEGER NOT NULL DEFAULT 0,
+            created_at  TEXT DEFAULT (datetime('now'))
+        );
         CREATE TABLE IF NOT EXISTS entries (
             id          TEXT PRIMARY KEY,
+            user_id     TEXT NOT NULL DEFAULT 'default',
             year        INTEGER NOT NULL,
             month       INTEGER NOT NULL,
             category    TEXT NOT NULL,
@@ -69,6 +97,7 @@ def init_db():
 
         CREATE TABLE IF NOT EXISTS credit_cards (
             id           TEXT PRIMARY KEY,
+            user_id      TEXT NOT NULL DEFAULT 'default',
             bank         TEXT NOT NULL,
             last4        TEXT NOT NULL DEFAULT '',
             limit_amt    REAL NOT NULL DEFAULT 0,
@@ -92,6 +121,7 @@ def init_db():
 
         CREATE TABLE IF NOT EXISTS loans (
             id              TEXT PRIMARY KEY,
+            user_id         TEXT NOT NULL DEFAULT 'default',
             lender          TEXT NOT NULL,
             loan_type       TEXT NOT NULL DEFAULT 'personal',
             principal       REAL NOT NULL DEFAULT 0,
@@ -128,6 +158,7 @@ def init_db():
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS networth_assets (
             id          TEXT PRIMARY KEY,
+            user_id     TEXT NOT NULL DEFAULT 'default',
             account     TEXT NOT NULL,
             asset_class TEXT NOT NULL,
             label       TEXT NOT NULL DEFAULT '',
@@ -137,6 +168,7 @@ def init_db():
         );
         CREATE TABLE IF NOT EXISTS ab_baskets (
             id           TEXT PRIMARY KEY,
+            user_id      TEXT NOT NULL DEFAULT 'default',
             name         TEXT NOT NULL,
             strategy     TEXT NOT NULL DEFAULT '',
             rebalance    TEXT NOT NULL DEFAULT 'monthly',
@@ -180,6 +212,7 @@ def init_db():
         );
         CREATE TABLE IF NOT EXISTS networth_plan (
             id              TEXT PRIMARY KEY,
+            user_id         TEXT NOT NULL DEFAULT 'default',
             current_age     INTEGER NOT NULL DEFAULT 30,
             current_nw      REAL NOT NULL DEFAULT 5000000,
             roi_pct         REAL NOT NULL DEFAULT 15,
@@ -191,15 +224,46 @@ def init_db():
         );
     """)
     conn.commit()
+    # ── Safe migrations for existing databases ────────────────────────────────
+    migrations = [
+        "ALTER TABLE entries ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+        "ALTER TABLE credit_cards ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+        "ALTER TABLE loans ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+        "ALTER TABLE networth_assets ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+        "ALTER TABLE networth_plan ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+        "ALTER TABLE ab_baskets ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+        "ALTER TABLE kite_config ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+        "ALTER TABLE kite_snapshots ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
+    ]
+    for m in migrations:
+        try: conn.execute(m); conn.commit()
+        except Exception: pass  # column already exists
+
+    # ── Seed default admin if no users exist ──────────────────────────────────
+    existing = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    if existing == 0:
+        import hashlib as _hl, secrets as _sec
+        salt = _sec.token_hex(16)
+        h = _hl.pbkdf2_hmac('sha256', b'admindr', salt.encode(), 260000)
+        conn.execute(
+            "INSERT INTO users (id,username,email,password_hash,is_admin) VALUES (?,?,?,?,1)",
+            (str(uuid.uuid4()), 'admin', 'admin@finhub.local', f'{salt}${h.hex()}')
+        )
+        conn.commit()
     conn.close()
     print("✅ Database ready:", DB_PATH)
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
+# ── Auth helpers ──────────────────────────────────────────────────────────────
+def current_user_id():
+    return session.get('user_id', 'default')
+
+def current_username():
+    return session.get('username', 'user')
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get('logged_in'):
-            # Always return JSON 401 for API routes or fetch/XHR requests
+        if not session.get('user_id'):
             wants_json = (
                 request.path.startswith('/api/') or
                 'application/json' in request.headers.get('Accept', '') or
@@ -212,37 +276,81 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def uid():
+    """Shorthand for current_user_id() — used in query params.""";
+    return current_user_id()
+
 # ── Pages ─────────────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    if not session.get('logged_in'):
+    if not session.get('user_id'):
         return redirect(url_for('login_page'))
     return redirect(url_for('home'))
 
 @app.route('/home')
 @login_required
 def home():
-    return render_template('home.html')
+    return render_template('home.html', username=current_username())
 
 @app.route('/budget')
 @login_required
 def budget():
     return render_template('index.html')
 
+# ── Login ──────────────────────────────────────────────────────────────────────
 @app.route('/login', methods=['GET'])
 def login_page():
-    if session.get('logged_in'): return redirect(url_for('home'))
-    return render_template('login.html', error=None)
+    if session.get('user_id'): return redirect(url_for('home'))
+    return render_template('login.html', error=None, allow_signup=ALLOW_SIGNUP)
 
 @app.route('/login', methods=['POST'])
 def do_login():
-    username = request.form.get('username','').strip()
+    username = request.form.get('username','').strip().lower()
     password = request.form.get('password','')
-    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+    user = q('SELECT * FROM users WHERE LOWER(username)=?', (username,), fetchone=True)
+    if user and verify_password(password, user['password_hash']):
         session.permanent = True
-        session['logged_in'] = True
+        session['user_id']   = user['id']
+        session['username']  = user['username']
+        session['is_admin']  = bool(user['is_admin'])
         return redirect(url_for('home'))
-    return render_template('login.html', error='Invalid username or password.')
+    return render_template('login.html', error='Invalid username or password.', allow_signup=ALLOW_SIGNUP)
+
+# ── Register ───────────────────────────────────────────────────────────────────
+@app.route('/register', methods=['GET'])
+def register_page():
+    if not ALLOW_SIGNUP:
+        return redirect(url_for('login_page'))
+    if session.get('user_id'): return redirect(url_for('home'))
+    return render_template('register.html', error=None)
+
+@app.route('/register', methods=['POST'])
+def do_register():
+    if not ALLOW_SIGNUP:
+        return redirect(url_for('login_page'))
+    username = request.form.get('username','').strip()
+    email    = request.form.get('email','').strip().lower()
+    password = request.form.get('password','')
+    confirm  = request.form.get('confirm','')
+    error = None
+    if not username or len(username) < 3:
+        error = 'Username must be at least 3 characters.'
+    elif not password or len(password) < 6:
+        error = 'Password must be at least 6 characters.'
+    elif password != confirm:
+        error = 'Passwords do not match.'
+    elif q('SELECT id FROM users WHERE LOWER(username)=?', (username.lower(),), fetchone=True):
+        error = 'Username already taken.'
+    if error:
+        return render_template('register.html', error=error)
+    uid_new = str(uuid.uuid4())
+    q('INSERT INTO users (id,username,email,password_hash) VALUES (?,?,?,?)',
+      (uid_new, username, email, hash_password(password)))
+    session.permanent = True
+    session['user_id']  = uid_new
+    session['username'] = username
+    session['is_admin'] = False
+    return redirect(url_for('home'))
 
 @app.route('/logout')
 def logout():
@@ -255,8 +363,8 @@ def logout():
 def get_entries():
     year  = int(request.args.get('year',  datetime.now().year))
     month = int(request.args.get('month', datetime.now().month - 1))
-    rows  = q('SELECT * FROM entries WHERE year=? AND month=? ORDER BY created_at',
-               (year, month), fetchall=True)
+    rows  = q('SELECT * FROM entries WHERE user_id=? AND year=? AND month=? ORDER BY created_at',
+               (uid(), year, month), fetchall=True)
     result = {cat: [] for cat in CATEGORIES}
     for r in rows:
         if r['category'] in result:
@@ -270,22 +378,22 @@ def get_entries():
 @login_required
 def add_entry():
     d = request.get_json()
-    q('INSERT INTO entries (id,year,month,category,name,amount,note) VALUES (?,?,?,?,?,?,?)',
-      (d['id'], d['year'], d['month'], d['category'], d['name'], d['amount'], d.get('note','')))
+    q('INSERT INTO entries (id,user_id,year,month,category,name,amount,note) VALUES (?,?,?,?,?,?,?,?)',
+      (d['id'], uid(), d['year'], d['month'], d['category'], d['name'], d['amount'], d.get('note','')))
     return jsonify({'ok': True})
 
 @app.route('/api/entries/<eid>', methods=['PUT'])
 @login_required
 def update_entry(eid):
     d = request.get_json()
-    q('UPDATE entries SET name=?,amount=?,note=? WHERE id=?',
-      (d['name'], d['amount'], d.get('note',''), eid))
+    q('UPDATE entries SET name=?,amount=?,note=? WHERE id=? AND user_id=?',
+      (d['name'], d['amount'], d.get('note',''), eid, uid()))
     return jsonify({'ok': True})
 
 @app.route('/api/entries/<eid>', methods=['DELETE'])
 @login_required
 def delete_entry(eid):
-    q('DELETE FROM entries WHERE id=?', (eid,))
+    q('DELETE FROM entries WHERE id=? AND user_id=?', (eid, uid()))
     return jsonify({'ok': True})
 
 # ── Copy previous month ───────────────────────────────────────────────────────
@@ -302,22 +410,22 @@ def copy_prev_month():
     # Check target is not empty (only copy if target has no entries, unless forced)
     force = d.get('force', False)
     if not force:
-        existing = q('SELECT COUNT(*) as n FROM entries WHERE year=? AND month=?',
-                     (to_year, to_month), fetchone=True)
+        existing = q('SELECT COUNT(*) as n FROM entries WHERE user_id=? AND year=? AND month=?',
+                     (uid(), to_year, to_month), fetchone=True)
         if existing and existing['n'] > 0:
             return jsonify({'ok': False, 'conflict': True,
                             'count': existing['n']})
 
-    src_rows = q('SELECT * FROM entries WHERE year=? AND month=? AND category IN ({})'.format(
+    src_rows = q('SELECT * FROM entries WHERE user_id=? AND year=? AND month=? AND category IN ({})'.format(
                   ','.join('?'*len(cats))),
-                 (from_year, from_month, *cats), fetchall=True)
+                 (uid(), from_year, from_month, *cats), fetchall=True)
 
     db = get_db()
     for r in src_rows:
         try:
             db.execute(
-                'INSERT INTO entries (id,year,month,category,name,amount,note) VALUES (?,?,?,?,?,?,?)',
-                (str(uuid.uuid4()), to_year, to_month,
+                'INSERT INTO entries (id,user_id,year,month,category,name,amount,note) VALUES (?,?,?,?,?,?,?,?)',
+                (str(uuid.uuid4()), uid(), to_year, to_month,
                  r['category'], r['name'], r['amount'], r['note'] or '')
             )
         except Exception:
@@ -330,8 +438,8 @@ def copy_prev_month():
 @login_required
 def get_analysis():
     year = int(request.args.get('year', datetime.now().year))
-    rows = q('SELECT month,category,SUM(amount) as total FROM entries WHERE year=? GROUP BY month,category',
-              (year,), fetchall=True)
+    rows = q('SELECT month,category,SUM(amount) as total FROM entries WHERE user_id=? AND year=? GROUP BY month,category',
+              (uid(), year), fetchall=True)
     data = {m: {cat: 0 for cat in CATEGORIES} for m in range(12)}
     for r in rows:
         if r['month'] in data and r['category'] in data[r['month']]:
@@ -341,7 +449,7 @@ def get_analysis():
 @app.route('/api/analysis/years')
 @login_required
 def get_years():
-    rows  = q('SELECT DISTINCT year FROM entries ORDER BY year DESC', fetchall=True)
+    rows  = q('SELECT DISTINCT year FROM entries WHERE user_id=? ORDER BY year DESC', (uid(),), fetchall=True)
     years = [r['year'] for r in rows]
     cur   = datetime.now().year
     if cur not in years: years.insert(0, cur)
@@ -351,14 +459,14 @@ def get_years():
 @app.route('/api/cards', methods=['GET'])
 @login_required
 def get_cards():
-    return jsonify(q('SELECT * FROM credit_cards ORDER BY bank', fetchall=True))
+    return jsonify(q('SELECT * FROM credit_cards WHERE user_id=? ORDER BY bank', (uid(),), fetchall=True))
 
 @app.route('/api/cards', methods=['POST'])
 @login_required
 def add_card():
     d = request.get_json()
-    q('INSERT INTO credit_cards (id,bank,last4,limit_amt) VALUES (?,?,?,?)',
-      (str(uuid.uuid4()), d['bank'], d.get('last4',''), d.get('limit_amt',0)))
+    q('INSERT INTO credit_cards (id,user_id,bank,last4,limit_amt) VALUES (?,?,?,?,?)',
+      (str(uuid.uuid4()), uid(), d['bank'], d.get('last4',''), d.get('limit_amt',0)))
     return jsonify({'ok': True})
 
 @app.route('/api/cards/<cid>', methods=['PUT'])
@@ -372,7 +480,7 @@ def update_card(cid):
 @app.route('/api/cards/<cid>', methods=['DELETE'])
 @login_required
 def delete_card(cid):
-    q('DELETE FROM credit_cards WHERE id=?', (cid,))
+    q('DELETE FROM credit_cards WHERE id=? AND user_id=?', (cid, uid()))
     return jsonify({'ok': True})
 
 # CC Bills
@@ -383,8 +491,8 @@ def get_cc_bills():
     month = int(request.args.get('month', datetime.now().month - 1))
     rows  = q('''SELECT b.*, c.bank, c.last4, c.limit_amt
                  FROM cc_bills b JOIN credit_cards c ON b.card_id=c.id
-                 WHERE b.year=? AND b.month=? ORDER BY c.bank''',
-               (year, month), fetchall=True)
+                 WHERE c.user_id=? AND b.year=? AND b.month=? ORDER BY c.bank''',
+               (uid(), year, month), fetchall=True)
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/cc-bills', methods=['POST'])
@@ -421,7 +529,7 @@ def cc_summary():
     month = int(request.args.get('month', datetime.now().month - 1))
     rows  = q('''SELECT b.*, c.bank, c.last4, c.limit_amt
                  FROM cc_bills b JOIN credit_cards c ON b.card_id=c.id
-                 WHERE b.year=? AND b.month=?''', (year, month), fetchall=True)
+                 WHERE c.user_id=? AND b.year=? AND b.month=?''', (uid(), year, month), fetchall=True)
     total_due  = sum(float(r['total_amt']) for r in rows)
     total_paid = sum(float(r['paid_amt'])  for r in rows)
     unpaid_cnt = sum(1 for r in rows if r['status'] != 'paid')
@@ -434,19 +542,19 @@ def cc_summary():
 def get_loans():
     status = request.args.get('status', 'all')
     if status == 'active':
-        rows = q("SELECT * FROM loans WHERE status='active' ORDER BY lender", fetchall=True)
+        rows = q("SELECT * FROM loans WHERE user_id=? AND status='active' ORDER BY lender", (uid(),), fetchall=True)
     else:
-        rows = q('SELECT * FROM loans ORDER BY lender', fetchall=True)
+        rows = q('SELECT * FROM loans WHERE user_id=? ORDER BY lender', (uid(),), fetchall=True)
     return jsonify(rows)
 
 @app.route('/api/loans', methods=['POST'])
 @login_required
 def add_loan():
     d = request.get_json()
-    q('''INSERT INTO loans (id,lender,loan_type,principal,interest_rate,tenure_months,
+    q('''INSERT INTO loans (id,user_id,lender,loan_type,principal,interest_rate,tenure_months,
                             emi_amount,start_date,outstanding,status,note)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
-      (str(uuid.uuid4()), d['lender'], d.get('loan_type','personal'),
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''',
+      (str(uuid.uuid4()), uid(), d['lender'], d.get('loan_type','personal'),
        d.get('principal',0), d.get('interest_rate',0), d.get('tenure_months',12),
        d.get('emi_amount',0), d.get('start_date',''),
        d.get('outstanding', d.get('principal',0)),
@@ -459,17 +567,17 @@ def update_loan(lid):
     d = request.get_json()
     q('''UPDATE loans SET lender=?,loan_type=?,principal=?,interest_rate=?,
                           tenure_months=?,emi_amount=?,start_date=?,outstanding=?,status=?,note=?
-         WHERE id=?''',
+         WHERE id=? AND user_id=?''',
       (d['lender'], d.get('loan_type','personal'), d.get('principal',0),
        d.get('interest_rate',0), d.get('tenure_months',12), d.get('emi_amount',0),
        d.get('start_date',''), d.get('outstanding',0),
-       d.get('status','active'), d.get('note',''), lid))
+       d.get('status','active'), d.get('note',''), lid, uid()))
     return jsonify({'ok': True})
 
 @app.route('/api/loans/<lid>', methods=['DELETE'])
 @login_required
 def delete_loan(lid):
-    q('DELETE FROM loans WHERE id=?', (lid,))
+    q('DELETE FROM loans WHERE id=? AND user_id=?', (lid, uid()))
     return jsonify({'ok': True})
 
 @app.route('/api/loan-payments', methods=['GET'])
@@ -479,15 +587,15 @@ def get_loan_payments():
     year  = request.args.get('year')
     month = request.args.get('month')
     if lid:
-        rows = q('SELECT * FROM loan_payments WHERE loan_id=? ORDER BY paid_date DESC',
-                 (lid,), fetchall=True)
+        rows = q('SELECT * FROM loan_payments lp JOIN loans l ON lp.loan_id=l.id WHERE lp.loan_id=? AND l.user_id=? ORDER BY lp.paid_date DESC',
+                 (lid, uid()), fetchall=True)
     elif year and month:
         rows = q('''SELECT p.*, l.lender, l.loan_type
                     FROM loan_payments p JOIN loans l ON p.loan_id=l.id
-                    WHERE p.year=? AND p.month=? ORDER BY l.lender''',
-                 (int(year), int(month)), fetchall=True)
+                    WHERE l.user_id=? AND p.year=? AND p.month=? ORDER BY l.lender''',
+                 (uid(), int(year), int(month)), fetchall=True)
     else:
-        rows = q('SELECT * FROM loan_payments ORDER BY paid_date DESC', fetchall=True)
+        rows = q('SELECT lp.* FROM loan_payments lp JOIN loans l ON lp.loan_id=l.id WHERE l.user_id=? ORDER BY lp.paid_date DESC', (uid(),), fetchall=True)
     return jsonify(rows)
 
 @app.route('/api/loan-payments', methods=['POST'])
@@ -510,17 +618,18 @@ def add_loan_payment():
 @app.route('/api/loan-payments/<pid>', methods=['DELETE'])
 @login_required
 def delete_loan_payment(pid):
-    pay = q('SELECT * FROM loan_payments WHERE id=?', (pid,), fetchone=True)
+    # Verify ownership via parent loan
+    pay = q('SELECT lp.* FROM loan_payments lp JOIN loans l ON lp.loan_id=l.id WHERE lp.id=? AND l.user_id=?', (pid, uid()), fetchone=True)
     if pay:
-        q('UPDATE loans SET outstanding = outstanding + ? WHERE id=?',
-          (float(pay['principal']), pay['loan_id']))
-    q('DELETE FROM loan_payments WHERE id=?', (pid,))
+        q('UPDATE loans SET outstanding = outstanding + ? WHERE id=? AND user_id=?',
+          (float(pay['principal']), pay['loan_id'], uid()))
+        q('DELETE FROM loan_payments WHERE id=?', (pid,))
     return jsonify({'ok': True})
 
 @app.route('/api/loan-summary')
 @login_required
 def loan_summary():
-    loans = q("SELECT * FROM loans WHERE status='active'", fetchall=True)
+    loans = q("SELECT * FROM loans WHERE user_id=? AND status='active'", (uid(),), fetchall=True)
     total_outstanding = sum(float(l['outstanding']) for l in loans)
     total_emi         = sum(float(l['emi_amount'])  for l in loans)
     return jsonify({'total_outstanding': total_outstanding,
@@ -536,8 +645,8 @@ def export_month():
     MN = ['January','February','March','April','May','June',
           'July','August','September','October','November','December']
     lbl   = f"{MN[month]} {year}"
-    rows  = q('SELECT * FROM entries WHERE year=? AND month=? ORDER BY category,created_at',
-               (year, month), fetchall=True)
+    rows  = q('SELECT * FROM entries WHERE user_id=? AND year=? AND month=? ORDER BY category,created_at',
+               (uid(), year, month), fetchall=True)
     by_cat= {cat: [r for r in rows if r['category']==cat] for cat in CATEGORIES}
     wb    = Workbook(); ws = wb.active; ws.title = 'Summary'
     _summary_sheet(ws, lbl, by_cat)
@@ -550,7 +659,7 @@ def export_month():
         _cat_sheet(wb.create_sheet(CL.get(cat,cat)), CL.get(cat,cat), lbl, by_cat[cat], CC.get(cat,'888888'))
     # CC bills sheet
     bills = q('''SELECT b.*,c.bank,c.last4 FROM cc_bills b JOIN credit_cards c ON b.card_id=c.id
-                 WHERE b.year=? AND b.month=? ORDER BY c.bank''', (year,month), fetchall=True)
+                 WHERE c.user_id=? AND b.year=? AND b.month=? ORDER BY c.bank''', (uid(),year,month), fetchall=True)
     if bills:
         wcc = wb.create_sheet('CC Bills Detail')
         _cc_bills_sheet(wcc, lbl, bills)
@@ -569,8 +678,8 @@ def export_full():
     MS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     oc = ['insurance','investments','expenses','discretionary','credit_card','loan']
     ac = ['income'] + oc
-    ry = q('SELECT * FROM entries WHERE year=? ORDER BY month,category,created_at', (year,), fetchall=True)
-    ra = q('SELECT * FROM entries ORDER BY year,month,category', fetchall=True)
+    ry = q('SELECT * FROM entries WHERE user_id=? AND year=? ORDER BY month,category,created_at', (uid(),year), fetchall=True)
+    ra = q('SELECT * FROM entries WHERE user_id=? ORDER BY year,month,category', (uid(),), fetchall=True)
     wb = Workbook(); ws = wb.active; ws.title = 'Monthly Summary'
     _period_sheet(ws, f'Monthly Summary — {year}', MN, ry, ac, oc, 'monthly')
     _period_sheet(wb.create_sheet('Quarterly Summary'), f'Quarterly Summary — {year}',
@@ -583,7 +692,7 @@ def export_full():
         _month_detail(wb.create_sheet(f"{MS[m]} {year}"), f"{MN[m]} {year}",
                       [r for r in ry if r['month']==m], ac)
     # Loans sheet
-    loans = q('SELECT * FROM loans ORDER BY lender', fetchall=True)
+    loans = q('SELECT * FROM loans WHERE user_id=? ORDER BY lender', (uid(),), fetchall=True)
     if loans:
         wl = wb.create_sheet('Loans')
         _loans_sheet(wl, loans)
@@ -738,11 +847,14 @@ def init_kite_db():
     conn = sqlite3.connect(DB_PATH)
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS kite_config (
-            key   TEXT PRIMARY KEY,
-            value TEXT NOT NULL
+            user_id TEXT NOT NULL DEFAULT 'default',
+            key     TEXT NOT NULL,
+            value   TEXT NOT NULL,
+            PRIMARY KEY (user_id, key)
         );
         CREATE TABLE IF NOT EXISTS networth_assets (
             id          TEXT PRIMARY KEY,
+            user_id     TEXT NOT NULL DEFAULT 'default',
             account     TEXT NOT NULL,
             asset_class TEXT NOT NULL,
             label       TEXT NOT NULL DEFAULT '',
@@ -752,6 +864,7 @@ def init_kite_db():
         );
         CREATE TABLE IF NOT EXISTS ab_baskets (
             id           TEXT PRIMARY KEY,
+            user_id      TEXT NOT NULL DEFAULT 'default',
             name         TEXT NOT NULL,
             strategy     TEXT NOT NULL DEFAULT '',
             rebalance    TEXT NOT NULL DEFAULT 'monthly',
@@ -795,6 +908,7 @@ def init_kite_db():
         );
         CREATE TABLE IF NOT EXISTS networth_plan (
             id              TEXT PRIMARY KEY,
+            user_id         TEXT NOT NULL DEFAULT 'default',
             current_age     INTEGER NOT NULL DEFAULT 30,
             current_nw      REAL NOT NULL DEFAULT 5000000,
             roi_pct         REAL NOT NULL DEFAULT 15,
@@ -806,6 +920,7 @@ def init_kite_db():
         );
         CREATE TABLE IF NOT EXISTS kite_snapshots (
             id            TEXT PRIMARY KEY,
+            user_id       TEXT NOT NULL DEFAULT 'default',
             snapshot_date TEXT NOT NULL,
             holdings_json TEXT NOT NULL,
             mf_json       TEXT NOT NULL DEFAULT '[]',
@@ -818,11 +933,11 @@ def init_kite_db():
     conn.close()
 
 def kite_cfg_get(key):
-    row = q('SELECT value FROM kite_config WHERE key=?', (key,), fetchone=True)
+    row = q('SELECT value FROM kite_config WHERE user_id=? AND key=?', (uid(),key), fetchone=True)
     return row['value'] if row else None
 
 def kite_cfg_set(key, value):
-    q('INSERT OR REPLACE INTO kite_config (key,value) VALUES (?,?)', (key, value))
+    q('INSERT OR REPLACE INTO kite_config (user_id,key,value) VALUES (?,?,?)', (uid(),key,value))
 
 def kite_api(path, access_token, api_key):
     import urllib.request, urllib.error, json as _json
@@ -910,7 +1025,7 @@ def kite_callback():
 @app.route('/api/kite/disconnect', methods=['POST'])
 @login_required
 def kite_disconnect():
-    q("DELETE FROM kite_config WHERE key='access_token'")
+    q("DELETE FROM kite_config WHERE user_id=? AND key='access_token'", (uid(),))
     return jsonify({'ok': True})
 
 @app.route('/api/kite/generate-token', methods=['POST'])
@@ -1019,11 +1134,11 @@ def kite_fetch():
     pledged_count = sum(1 for h in holdings if h['is_pledged'])
 
     # Delete existing snapshot for today (keep only latest per day)
-    q("DELETE FROM kite_snapshots WHERE snapshot_date=?", (today,))
+    q("DELETE FROM kite_snapshots WHERE user_id=? AND snapshot_date=?", (uid(), today))
     snap_id = str(_uuid.uuid4())
-    q("""INSERT INTO kite_snapshots (id,snapshot_date,holdings_json,mf_json,total_value,total_pnl)
-         VALUES (?,?,?,?,?,?)""",
-      (snap_id, today, _json.dumps(holdings), _json.dumps(mf_holdings), total_value, total_pnl))
+    q("""INSERT INTO kite_snapshots (id,user_id,snapshot_date,holdings_json,mf_json,total_value,total_pnl)
+         VALUES (?,?,?,?,?,?,?)""",
+      (snap_id, uid(), today, _json.dumps(holdings), _json.dumps(mf_holdings), total_value, total_pnl))
 
     return jsonify({
         'ok': True,
@@ -1040,7 +1155,7 @@ def kite_fetch():
 @login_required
 def kite_holdings():
     import json as _json
-    snap = q('SELECT * FROM kite_snapshots ORDER BY created_at DESC LIMIT 1', fetchone=True)
+    snap = q('SELECT * FROM kite_snapshots WHERE user_id=? ORDER BY created_at DESC LIMIT 1', (uid(),), fetchone=True)
     if not snap:
         return jsonify({'holdings': [], 'mf': [], 'fetched_at': None,
                         'total_value': 0, 'total_pnl': 0})
@@ -1102,16 +1217,16 @@ def kite_snapshots():
     # Return one row per calendar date (latest sync of that day)
     rows = q("""
         SELECT snapshot_date, total_value, total_pnl, MAX(created_at) as created_at
-        FROM kite_snapshots
+        FROM kite_snapshots WHERE user_id=?
         GROUP BY snapshot_date
         ORDER BY snapshot_date ASC
-    """, fetchall=True)
+    """, (uid(),), fetchall=True)
     return jsonify(rows)
 
 @app.route('/api/kite/snapshots', methods=['DELETE'])
 @login_required
 def kite_clear_snapshots():
-    q('DELETE FROM kite_snapshots')
+    q('DELETE FROM kite_snapshots WHERE user_id=?', (uid(),))
     return jsonify({'ok': True})
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1217,7 +1332,7 @@ def kite_auto_login():
 @app.route('/api/nw/assets', methods=['GET'])
 @login_required
 def nw_get_assets():
-    rows = q('SELECT * FROM networth_assets ORDER BY sort_order, created_at', fetchall=True)
+    rows = q('SELECT * FROM networth_assets WHERE user_id=? ORDER BY sort_order, created_at', (uid(),), fetchall=True)
     return jsonify(rows)
 
 @app.route('/api/nw/assets', methods=['POST'])
@@ -1225,31 +1340,31 @@ def nw_get_assets():
 def nw_add_asset():
     import uuid as _u
     d = request.get_json()
-    max_ord = q('SELECT MAX(sort_order) as m FROM networth_assets', fetchone=True)
+    max_ord = q('SELECT MAX(sort_order) as m FROM networth_assets WHERE user_id=?', (uid(),), fetchone=True)
     nxt = (max_ord['m'] or 0) + 1 if max_ord else 1
-    q('INSERT INTO networth_assets (id,account,asset_class,label,amount,sort_order) VALUES (?,?,?,?,?,?)',
-      (str(_u.uuid4()), d['account'], d['asset_class'], d.get('label',''), float(d['amount']), nxt))
+    q('INSERT INTO networth_assets (id,user_id,account,asset_class,label,amount,sort_order) VALUES (?,?,?,?,?,?,?)',
+      (str(_u.uuid4()), uid(), d['account'], d['asset_class'], d.get('label',''), float(d['amount']), nxt))
     return jsonify({'ok': True})
 
 @app.route('/api/nw/assets/<aid>', methods=['PUT'])
 @login_required
 def nw_update_asset(aid):
     d = request.get_json()
-    q('UPDATE networth_assets SET account=?,asset_class=?,label=?,amount=? WHERE id=?',
-      (d['account'], d['asset_class'], d.get('label',''), float(d['amount']), aid))
+    q('UPDATE networth_assets SET account=?,asset_class=?,label=?,amount=? WHERE id=? AND user_id=?',
+      (d['account'], d['asset_class'], d.get('label',''), float(d['amount']), aid, uid()))
     return jsonify({'ok': True})
 
 @app.route('/api/nw/assets/<aid>', methods=['DELETE'])
 @login_required
 def nw_delete_asset(aid):
-    q('DELETE FROM networth_assets WHERE id=?', (aid,))
+    q('DELETE FROM networth_assets WHERE id=? AND user_id=?', (aid, uid()))
     return jsonify({'ok': True})
 
 @app.route('/api/nw/plan', methods=['GET'])
 @login_required
 def nw_get_plan():
     import json as _j
-    row = q('SELECT * FROM networth_plan ORDER BY updated_at DESC LIMIT 1', fetchone=True)
+    row = q('SELECT * FROM networth_plan WHERE user_id=? ORDER BY updated_at DESC LIMIT 1', (uid(),), fetchone=True)
     if not row:
         return jsonify({'current_age':30,'current_nw':5000000,'roi_pct':15,
                         'swp_pct':3,'swp_start_age':55,'annual_invest':{}})
@@ -1263,11 +1378,11 @@ def nw_save_plan():
     import json as _j
     import uuid as _u2
     d = request.get_json()
-    q('DELETE FROM networth_plan')
+    q('DELETE FROM networth_plan WHERE user_id=?', (uid(),))
     q("""INSERT INTO networth_plan
-         (id,current_age,current_nw,roi_pct,swp_pct,swp_start_age,annual_invest_json,invest_rows_json,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,datetime('now'))""",
-      (str(_u2.uuid4()),
+         (id,user_id,current_age,current_nw,roi_pct,swp_pct,swp_start_age,annual_invest_json,invest_rows_json,updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))""",
+      (str(_u2.uuid4()), uid(),
        int(d.get('current_age',30)), float(d.get('current_nw',5000000)),
        float(d.get('roi_pct',15)), float(d.get('swp_pct',3)),
        int(d.get('swp_start_age',55)),
@@ -1357,7 +1472,7 @@ def ab_nse_price(symbols):
 @app.route('/api/ab/baskets', methods=['GET'])
 @login_required
 def ab_get_baskets():
-    baskets = q('SELECT * FROM ab_baskets ORDER BY created_at', fetchall=True)
+    baskets = q('SELECT * FROM ab_baskets WHERE user_id=? ORDER BY created_at', (uid(),), fetchall=True)
     for b in baskets:
         instrs = q('SELECT * FROM ab_instruments WHERE basket_id=? ORDER BY sort_order',
                    (b['id'],), fetchall=True)
@@ -1378,9 +1493,9 @@ def ab_create_basket():
     d = request.get_json()
     bid = str(_ab_uuid.uuid4())
     inception = d.get('inception') or _dt.now().strftime('%Y-%m-%d')
-    q('''INSERT INTO ab_baskets (id,name,strategy,rebalance,capital,nav,inception,status,notes)
-         VALUES (?,?,?,?,?,100.0,?,?,?)''',
-      (bid, d['name'], d.get('strategy',''), d.get('rebalance','monthly'),
+    q('''INSERT INTO ab_baskets (id,user_id,name,strategy,rebalance,capital,nav,inception,status,notes)
+         VALUES (?,?,?,?,?,?,100.0,?,?,?)''',
+      (bid, uid(), d['name'], d.get('strategy',''), d.get('rebalance','monthly'),
        float(d.get('capital',0)), inception, 'active', d.get('notes','')))
     # Save instruments
     for i, ins in enumerate(d.get('instruments', [])):
@@ -1399,9 +1514,9 @@ def ab_create_basket():
 @login_required
 def ab_update_basket(bid):
     d = request.get_json()
-    q('''UPDATE ab_baskets SET name=?,strategy=?,rebalance=?,capital=?,status=?,notes=? WHERE id=?''',
+    q('''UPDATE ab_baskets SET name=?,strategy=?,rebalance=?,capital=?,status=?,notes=? WHERE id=? AND user_id=?''',
       (d['name'], d.get('strategy',''), d.get('rebalance','monthly'),
-       float(d.get('capital',0)), d.get('status','active'), d.get('notes',''), bid))
+       float(d.get('capital',0)), d.get('status','active'), d.get('notes',''), bid, uid()))
     # Replace instruments
     q('DELETE FROM ab_instruments WHERE basket_id=?', (bid,))
     for i, ins in enumerate(d.get('instruments', [])):
@@ -1419,7 +1534,7 @@ def ab_delete_basket(bid):
     q('DELETE FROM ab_instruments WHERE basket_id=?', (bid,))
     q('DELETE FROM ab_nav_history WHERE basket_id=?', (bid,))
     q('DELETE FROM ab_orders WHERE basket_id=?', (bid,))
-    q('DELETE FROM ab_baskets WHERE id=?', (bid,))
+    q('DELETE FROM ab_baskets WHERE id=? AND user_id=?', (bid, uid()))
     return jsonify({'ok': True})
 
 @app.route('/api/ab/baskets/<bid>/nav', methods=['GET'])
@@ -1436,7 +1551,7 @@ def ab_refresh_nav(bid):
     """Fetch live prices, recompute NAV and record it."""
     access_token = kite_cfg_get('access_token')
     api_key      = kite_cfg_get('api_key')
-    basket = q('SELECT * FROM ab_baskets WHERE id=?', (bid,), fetchone=True)
+    basket = q('SELECT * FROM ab_baskets WHERE id=? AND user_id=?', (bid, uid()), fetchone=True)
     if not basket:
         return jsonify({'error': 'Basket not found'}), 404
     instrs = q('SELECT * FROM ab_instruments WHERE basket_id=?', (bid,), fetchall=True)
@@ -1498,7 +1613,7 @@ def ab_rebalance(bid):
     d = request.get_json() or {}
     place = d.get('place', False)
 
-    basket = q('SELECT * FROM ab_baskets WHERE id=?', (bid,), fetchone=True)
+    basket = q('SELECT * FROM ab_baskets WHERE id=? AND user_id=?', (bid, uid()), fetchone=True)
     if not basket: return jsonify({'error': 'Basket not found'}), 404
     instrs = q('SELECT * FROM ab_instruments WHERE basket_id=?', (bid,), fetchall=True)
     if not instrs: return jsonify({'error': 'No instruments'}), 400
@@ -1601,7 +1716,7 @@ def ab_nifty():
 @app.route('/api/ab/summary', methods=['GET'])
 @login_required
 def ab_summary():
-    baskets = q("SELECT * FROM ab_baskets WHERE status='active'", fetchall=True)
+    baskets = q("SELECT * FROM ab_baskets WHERE user_id=? AND status='active'", (uid(),), fetchall=True)
     total_capital = sum(float(b['capital']) for b in baskets)
     total_nav_val = sum(float(b.get('nav',100)) * float(b['capital']) / 100 for b in baskets)
     total_pnl = total_nav_val - total_capital
@@ -1629,7 +1744,7 @@ def ab_debug_prices():
     import urllib.parse as _uparse
     access_token = kite_cfg_get('access_token')
     api_key      = kite_cfg_get('api_key')
-    baskets = q("SELECT * FROM ab_baskets WHERE status='active'", fetchall=True)
+    baskets = q("SELECT * FROM ab_baskets WHERE user_id=? AND status='active'", (uid(),), fetchall=True)
     all_instrs = []
     for b in baskets:
         rows = q('SELECT tradingsymbol, exchange, avg_price FROM ab_instruments WHERE basket_id=?', (b['id'],), fetchall=True)
@@ -1674,7 +1789,7 @@ def ab_holdings_perf():
     """Top/bottom performers across all baskets by fetching live prices."""
     access_token = kite_cfg_get('access_token')
     api_key      = kite_cfg_get('api_key')
-    baskets = q("SELECT * FROM ab_baskets WHERE status='active'", fetchall=True)
+    baskets = q("SELECT * FROM ab_baskets WHERE user_id=? AND status='active'", (uid(),), fetchall=True)
     all_instrs = []
     basket_map = {b['id']: b['name'] for b in baskets}
     for b in baskets:
@@ -1710,11 +1825,23 @@ def ab_holdings_perf():
     perf.sort(key=lambda x: x['pnl_pct'], reverse=True)
     return jsonify({'instruments': perf})
 
+# ── Account info API ─────────────────────────────────────────────────────────
+@app.route('/api/me')
+@login_required
+def api_me():
+    user = q('SELECT id,username,email,is_admin,created_at FROM users WHERE id=?',
+             (uid(),), fetchone=True)
+    return jsonify(user or {})
+
 if __name__ == '__main__':
+    os.makedirs(DATA_DIR, exist_ok=True)
     init_db()
     init_kite_db()
-    print("🚀 FinHub running at http://127.0.0.1:5000")
-    print("🔑 Login: admin / admindr")
+    port = int(os.environ.get('PORT', 5000))
+    debug = not os.environ.get('RENDER', False)
+    host = '0.0.0.0' if os.environ.get('RENDER') else '127.0.0.1'
+    print(f"🚀 FinHub running at http://{host}:{port}")
+    print("👥 Multi-user mode — /register to create accounts")
     ab_routes = [r for r in app.url_map.iter_rules() if '/ab/' in r.rule]
     print(f"🧺 AutoBasket: {len(ab_routes)} routes registered" if ab_routes else "❌ AutoBasket routes NOT found!")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=debug, host=host, port=port)
