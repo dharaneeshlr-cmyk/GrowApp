@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Strategies — FinHub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f0e0d;--paper:#f5f0e8;--cream:#ede7d9;--cream2:#e4ddd0;
+  --gold:#c9a84c;--gold-light:#e8d49a;--gold-dark:#8a6d2f;
+  --green:#2d6a4f;--green-light:#d8f3dc;
+  --blue:#1d3557;--blue-light:#d6e4f0;
+  --purple:#7b2d8b;--purple-light:#ead6f0;
+  --amber:#b5591a;--amber-light:#fce8d5;
+  --shadow:0 4px 24px rgba(15,14,13,.09);--shadow-lg:0 12px 40px rgba(15,14,13,.16);
+  --radius:16px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+
+/* ── Nav ── */
+nav{background:var(--ink);color:var(--paper);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:66px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.25)}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-icon{width:36px;height:36px;background:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.nav-title{font-family:'DM Serif Display',serif;font-size:1.4rem;letter-spacing:-.02em;color:var(--paper)}
+.nav-right{display:flex;align-items:center;gap:.6rem}
+.btn-n{padding:7px 14px;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;border:none;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .18s;text-decoration:none}
+.btn-home{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.14)}
+.btn-home:hover{background:rgba(255,255,255,.16);color:#fff}
+.btn-logout{background:rgba(255,255,255,.10);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.18)}
+.btn-logout:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* ── Hero ── */
+.hero{background:var(--ink);color:var(--paper);padding:2.5rem 2rem 3rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.06) 1px,transparent 1px);background-size:44px 44px;animation:grid 30s linear infinite}
+@keyframes grid{from{background-position:0 0}to{background-position:44px 44px}}
+.hero-inner{position:relative;z-index:1;max-width:1200px;margin:0 auto}
+.hero-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(201,168,76,.7);font-weight:600;margin-bottom:.4rem}
+.hero-title{font-family:'DM Serif Display',serif;font-size:2rem;letter-spacing:-.02em;margin-bottom:.5rem}
+.hero-sub{font-size:.9rem;color:rgba(245,240,232,.55);max-width:560px}
+.disclaimer{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.6rem 1rem;font-size:.75rem;color:rgba(245,240,232,.5);margin-top:1.25rem;max-width:640px}
+
+/* ── Main ── */
+main{max-width:1200px;margin:0 auto;padding:2rem 2rem 5rem}
+
+/* ── Strategy Cards (landing list) ── */
+.strategies-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:3rem}
+.strat-card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);cursor:pointer;overflow:hidden;transition:transform .22s,box-shadow .22s;border-top:5px solid}
+.strat-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg)}
+.strat-card.factor{border-color:var(--green)}
+.strat-card.s8{border-color:var(--blue)}
+.strat-card-body{padding:1.75rem}
+.strat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.1rem}
+.strat-icon{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.strat-card.factor .strat-icon{background:var(--green-light)}
+.strat-card.s8 .strat-icon{background:var(--blue-light)}
+.strat-badge{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:4px 10px;border-radius:20px}
+.badge-static{background:var(--green-light);color:#1e6640}
+.badge-dynamic{background:var(--blue-light);color:#1d3557}
+.strat-name{font-family:'DM Serif Display',serif;font-size:1.35rem;letter-spacing:-.02em;margin-bottom:.35rem}
+.strat-sub{font-size:.85rem;color:#777;line-height:1.55;margin-bottom:1.4rem}
+.strat-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;padding:1rem 0;border-top:1px solid var(--cream);border-bottom:1px solid var(--cream);margin-bottom:1.25rem}
+.metric{text-align:center}
+.metric-val{font-family:'DM Serif Display',serif;font-size:1.3rem;line-height:1}
+.metric-lbl{font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-top:3px;font-weight:600}
+.strat-card.factor .metric-val{color:var(--green)}
+.strat-card.s8 .metric-val{color:var(--blue)}
+.strat-cta{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-radius:10px;font-size:.9rem;font-weight:600;transition:opacity .15s}
+.strat-card.factor .strat-cta{background:var(--green);color:#fff}
+.strat-card.s8 .strat-cta{background:var(--blue);color:#fff}
+.strat-card:hover .strat-cta{opacity:.9}
+.cta-arrow{font-size:1.1rem;transition:transform .2s}
+.strat-card:hover .cta-arrow{transform:translateX(5px)}
+
+/* ── Detail Panel ── */
+.detail-panel{display:none;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.detail-panel.active{display:block}
+.detail-back{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid var(--cream);padding:8px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;color:#666;transition:all .18s;margin-bottom:1.5rem}
+.detail-back:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.detail-header{background:var(--ink);color:var(--paper);border-radius:var(--radius);padding:2rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.detail-header::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:32px 32px}
+.dh-inner{position:relative;z-index:1}
+.dh-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem}
+.dh-title{font-family:'DM Serif Display',serif;font-size:1.8rem;letter-spacing:-.02em;margin-bottom:.4rem}
+.dh-sub{font-size:.88rem;opacity:.6;margin-bottom:1.5rem}
+.dh-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.dh-kpi{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:.85rem 1rem}
+.dh-kpi-val{font-family:'DM Serif Display',serif;font-size:1.5rem;line-height:1;margin-bottom:3px}
+.dh-kpi-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;opacity:.45;font-weight:600}
+
+/* ── Section blocks ── */
+.section-block{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.5rem;margin-bottom:1.25rem}
+.section-block h2{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.section-block h3{font-family:'DM Serif Display',serif;font-size:1rem;margin-bottom:.6rem;color:#444}
+.section-block p{font-size:.88rem;line-height:1.7;color:#444;margin-bottom:.75rem}
+.section-block p:last-child{margin-bottom:0}
+
+/* ── Tables ── */
+.styled-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.styled-table th{padding:9px 12px;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#aaa;background:var(--paper)}
+.styled-table td{padding:10px 12px;border-bottom:1px solid var(--cream);vertical-align:top;line-height:1.45}
+.styled-table tr:last-child td{border-bottom:none}
+.styled-table tr:hover td{background:#fafaf8}
+.styled-table .right{text-align:right}
+.factor-chip{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.72rem;font-weight:700;letter-spacing:.04em}
+.chip-mom{background:#fce8d5;color:#7a3a10}
+.chip-qual{background:var(--blue-light);color:#1d3557}
+.chip-val{background:#fff3cd;color:#856404}
+.chip-lovol{background:#e8f4fd;color:#0a4a7e}
+.chip-gold{background:#fdf6e3;color:#8a6d2f}
+.chip-alpha{background:var(--purple-light);color:var(--purple)}
+
+/* ── Allocation viz ── */
+.alloc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.regime-card{background:var(--paper);border-radius:12px;padding:1.1rem}
+.regime-card h4{font-size:.82rem;font-weight:700;margin-bottom:.75rem;display:flex;align-items:center;gap:7px}
+.regime-label{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700}
+.rl-bull-calm{background:#d8f3dc;color:#1e6640}
+.rl-bull-fear{background:#fff3cd;color:#856404}
+.rl-bear-calm{background:#e8f4fd;color:#0a4a7e}
+.rl-bear-fear{background:#f5d6d6;color:#7a1919}
+.alloc-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.78rem}
+.alloc-bar-label{width:52px;font-weight:600;flex-shrink:0}
+.alloc-bar-track{flex:1;height:9px;background:rgba(15,14,13,.08);border-radius:5px;overflow:hidden}
+.alloc-bar-fill{height:100%;border-radius:5px}
+.alloc-bar-pct{width:30px;text-align:right;color:#888;flex-shrink:0}
+
+/* ── Rules list ── */
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+.rule-item{display:flex;gap:10px;background:var(--paper);border-radius:9px;padding:.75rem .9rem;font-size:.82rem;line-height:1.5}
+.rule-num{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--gold-dark);flex-shrink:0;width:22px;font-weight:700}
+.rule-text{color:#444}
+
+/* ── Annual returns heatmap ── */
+.returns-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.returns-table th{padding:7px 10px;text-align:center;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#aaa;background:var(--paper)}
+.returns-table td{padding:7px 10px;border-bottom:1px solid var(--cream);text-align:center;font-weight:600}
+.returns-table td:first-child{text-align:left;font-weight:700}
+.ret-pos-hi{color:#1e6640;background:#d8f3dc20}
+.ret-pos{color:#2d6a4f}
+.ret-neg{color:#9c2323}
+.ret-neg-hi{color:#7a1919;background:#f5d6d620}
+
+/* ── Info boxes ── */
+.info-box{border-radius:9px;padding:.85rem 1rem;font-size:.84rem;line-height:1.65;margin-bottom:1rem}
+.info-box:last-child{margin-bottom:0}
+.info-box.green{background:#f0fff4;border:1px solid #b7ebc6;color:#1e6640}
+.info-box.blue{background:#e8f4fd;border:1px solid #b3d9f5;color:#1d3557}
+.info-box.amber{background:#fff8e1;border:1px solid #ffe082;color:#795548}
+.info-box.red{background:#fff2f2;border:1px solid #fbc8c8;color:#c0392b}
+.info-box strong{font-weight:700}
+
+/* ── Two col layout ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+
+@media(max-width:860px){
+  .strategies-grid{grid-template-columns:1fr}
+  .dh-kpis{grid-template-columns:repeat(2,1fr)}
+  .alloc-grid{grid-template-columns:1fr}
+  .rules-grid{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  nav{padding:0 1rem;flex-wrap:wrap;height:auto;padding:.6rem 1rem;gap:.4rem}
+  main{padding:1.25rem 1rem 3rem}
+  .strat-metrics{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-icon">🧭</div>
+    <div class="nav-title">Investment Strategies</div>
+  </div>
+  <div class="nav-right">
+    <a href="/home" class="btn-n btn-home">🏠 Home</a>
+    <a href="/logout" class="btn-n btn-logout">🚪 Logout</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-label">GrowGuru · Educational Material</div>
+    <div class="hero-title">Investment Strategy Rulebooks</div>
+    <div class="hero-sub">Two systematic, rules-based strategies for Indian equity ETF investing. Click any strategy to explore the full rulebook, allocations, performance, and operating rules.</div>
+    <div class="disclaimer">⚠ For educational purposes only · Not investment advice · Past performance does not guarantee future results</div>
+  </div>
+</div>
+
+<main>
+
+<!-- ══ STRATEGY LIST ══ -->
+<div id="listView">
+  <div class="strategies-grid">
+
+    <!-- Factor Investing Card -->
+    <div class="strat-card factor" onclick="showDetail('factor')">
+      <div class="strat-card-body">
+        <div class="strat-top">
+          <div class="strat-icon">⚙️</div>
+          <span class="strat-badge badge-static">Static · Annual Rebalance</span>
+        </div>
+        <div class="strat-name">Factor Investing Programme</div>
+        <div class="strat-sub">Five-ETF static portfolio — Momentum, Quality, Value, Low Vol and Gold. Rebalance once a year in January. No signals, no timing, no decisions.</div>
+        <div class="strat-metrics">
+          <div class="metric"><div class="metric-val">14.6%</div><div class="metric-lbl">18-yr CAGR</div></div>
+          <div class="metric"><div class="metric-val">−34.8%</div><div class="metric-lbl">Max DD</div></div>
+          <div class="metric"><div class="metric-val">0.701</div><div class="metric-lbl">Sharpe</div></div>
+          <div class="metric"><div class="metric-val">11.5×</div><div class="metric-lbl">₹1L → ₹11.5L</div></div>
+        </div>
+        <div class="strat-cta">
+          <span>View Full Rulebook</span>
+          <span class="cta-arrow">→</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S8 Dynamic Card -->
+    <div class="strat-card s8" onclick="showDetail('s8')">
+      <div class="strat-card-body">
+        <div class="strat-top">
+          <div class="strat-icon">🔄</div>
+          <span class="strat-badge badge-dynamic">Dynamic · Monthly Signals</span>
+        </div>
+        <div class="strat-name">S8 Dynamic System v2.0</div>
+        <div class="strat-sub">Regime-driven allocation engine. Two signals — Nifty 50 vs 21-week MA and India VIX — determine one of four allocations monthly. No predictions, just rules.</div>
+        <div class="strat-metrics">
+          <div class="metric"><div class="metric-val">19.1%</div><div class="metric-lbl">17-yr CAGR</div></div>
+          <div class="metric"><div class="metric-val">−16.3%</div><div class="metric-lbl">Max DD</div></div>
+          <div class="metric"><div class="metric-val">1.416</div><div class="metric-lbl">Sharpe</div></div>
+          <div class="metric"><div class="metric-val">19.6×</div><div class="metric-lbl">₹1L → ₹19.6L</div></div>
+        </div>
+        <div class="strat-cta">
+          <span>View Full Rulebook</span>
+          <span class="cta-arrow">→</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Comparison block -->
+  <div class="section-block">
+    <h2>📊 Side-by-Side Comparison</h2>
+    <table class="styled-table">
+      <thead><tr>
+        <th>Attribute</th>
+        <th style="color:var(--green)">⚙️ Factor Investing</th>
+        <th style="color:var(--blue)">🔄 S8 Dynamic</th>
+      </tr></thead>
+      <tbody>
+        <tr><td><strong>Approach</strong></td><td>Static allocation, annual rebalance</td><td>Regime-driven, monthly signal check</td></tr>
+        <tr><td><strong>Signals required</strong></td><td>None — just check weights in January</td><td>2 signals monthly (Nifty 21W MA + VIX)</td></tr>
+        <tr><td><strong>Time needed</strong></td><td>30 min/year</td><td>5–10 min/month</td></tr>
+        <tr><td><strong>CAGR (backtested)</strong></td><td style="color:var(--green);font-weight:700">14.6% (18 years)</td><td style="color:var(--blue);font-weight:700">19.1% (17 years)</td></tr>
+        <tr><td><strong>Max Drawdown</strong></td><td>−34.8% (2008)</td><td>−16.3%</td></tr>
+        <tr><td><strong>Sharpe Ratio</strong></td><td>0.701</td><td style="color:var(--blue);font-weight:700">1.416</td></tr>
+        <tr><td><strong>Number of ETFs</strong></td><td>5</td><td>6</td></tr>
+        <tr><td><strong>Gold allocation</strong></td><td>Fixed 25%</td><td>10% to 35% (regime-based)</td></tr>
+        <tr><td><strong>Who it suits</strong></td><td>Set-and-forget investors</td><td>Disciplined rule-followers</td></tr>
+        <tr><td><strong>Key risk</strong></td><td>Full drawdown during crashes</td><td>Whipsaws near VIX=20 boundary</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ FACTOR DETAIL ══ -->
+<div id="detail-factor" class="detail-panel">
+  <button class="detail-back" onclick="showList()">← Back to Strategies</button>
+
+  <div class="detail-header">
+    <div class="dh-inner">
+      <div class="dh-badge" style="background:var(--green-light);color:#1e6640">⚙️ Static · Annual Rebalance · 18-Year Backtest</div>
+      <div class="dh-title">Factor Investing Programme</div>
+      <div class="dh-sub">GrowGuru Student Rulebook · Backtested 2007–2025 · NSE Factor Index TRI Data</div>
+      <div class="dh-kpis">
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:#6fcf97">14.6%</div><div class="dh-kpi-lbl">18-yr CAGR</div></div>
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:#eb5757">−34.8%</div><div class="dh-kpi-lbl">Worst Year (2008)</div></div>
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:var(--gold)">0.701</div><div class="dh-kpi-lbl">Sharpe Ratio</div></div>
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:#6fcf97">₹11.55L</div><div class="dh-kpi-lbl">₹1L from 2007</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What is it -->
+  <div class="section-block">
+    <h2>01 — What is Factor Investing?</h2>
+    <p>Factor investing is a rules-based investment approach that selects stocks based on proven characteristics — called "factors" — that have historically delivered better returns than the broad market over long periods. Unlike traditional index investing or active fund investing, factor investing uses systematic, pre-defined rules. No emotions. No predictions. Just disciplined execution.</p>
+    <div class="two-col" style="margin-top:1rem;margin-bottom:0">
+      <div class="info-box green"><strong>Index says:</strong> Buy everything by market cap.<br><strong>Active says:</strong> Pick the best stocks.<br><strong>Factor says:</strong> Buy proven characteristics.</div>
+      <div class="info-box blue"><strong>18-yr India CAGR comparison:</strong><br>Nifty 50: 10.1% · Active Funds: Varies<br>This Factor Portfolio: <strong>14.6%</strong></div>
+    </div>
+  </div>
+
+  <!-- The Five Factors -->
+  <div class="section-block">
+    <h2>02 — The Five Factors</h2>
+    <table class="styled-table">
+      <thead><tr><th>Factor</th><th>What It Buys</th><th>When It Works</th><th>When It Lags</th><th>ETF</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="factor-chip chip-mom">🚀 Momentum</span></td>
+          <td>Stocks with strongest recent price trend</td>
+          <td>Trending bull markets, sector rallies</td>
+          <td>Sharp reversals, high volatility</td>
+          <td>MO Nifty 500 Momentum 50</td>
+        </tr>
+        <tr>
+          <td><span class="factor-chip chip-qual">💎 Quality</span></td>
+          <td>High ROE, low debt, consistent earnings</td>
+          <td>Defensive phases, recovery after crash</td>
+          <td>Speculative rallies, cheap-stock runs</td>
+          <td>ICICI Nifty 200 Quality 30</td>
+        </tr>
+        <tr>
+          <td><span class="factor-chip chip-val">🏷️ Value</span></td>
+          <td>Stocks trading cheap vs earnings or book</td>
+          <td>Value recovery cycles, after prolonged lags</td>
+          <td>Growth-led bull markets (can lag 3–5 yrs)</td>
+          <td>Axis Nifty 500 Value 50</td>
+        </tr>
+        <tr>
+          <td><span class="factor-chip chip-lovol">🛡️ Low Vol</span></td>
+          <td>Stocks with lowest historical volatility</td>
+          <td>Uncertain, volatile, sideways markets</td>
+          <td>Strong bull markets where risk is rewarded</td>
+          <td>ICICI Nifty 100 Low Vol 30</td>
+        </tr>
+        <tr>
+          <td><span class="factor-chip chip-gold">🥇 Gold ETF</span></td>
+          <td>Physical gold via NSE-listed ETF</td>
+          <td>Market crashes, rupee depreciation</td>
+          <td>Strong equity bull markets</td>
+          <td>Tata Gold ETF / GoldBees</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="info-box amber" style="margin-top:1rem;margin-bottom:0"><strong>Key Insight:</strong> No factor wins every year. Every factor goes through multi-year lag periods. Momentum had a bad 2025. Value lagged from 2013 to 2019 — then returned +58% in 2023. The portfolio holds all five so when one lags, others are leading.</div>
+  </div>
+
+  <!-- Final Portfolio -->
+  <div class="section-block">
+    <h2>03 — The Final Portfolio</h2>
+    <p>Five ETFs. Fixed allocations. Rebalance once a year in January. Nothing else to do.</p>
+    <table class="styled-table">
+      <thead><tr><th>Allocation</th><th>Factor</th><th>ETF Name</th><th>Why It Is Here</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:700;color:var(--amber);font-size:1.1rem">25%</td><td><span class="factor-chip chip-mom">Momentum</span></td><td>MO Nifty 500 Momentum 50 ETF</td><td>Captures market leadership rotation</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue);font-size:1.1rem">20%</td><td><span class="factor-chip chip-qual">Quality</span></td><td>ICICI Nifty 200 Quality 30 ETF</td><td>Stable compounders, low drawdown</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple);font-size:1.1rem">15%</td><td><span class="factor-chip chip-val">Value</span></td><td>Axis Nifty 500 Value 50 ETF</td><td>Long-cycle recovery premium</td></tr>
+        <tr><td style="font-weight:700;color:var(--green);font-size:1.1rem">15%</td><td><span class="factor-chip chip-lovol">Low Vol</span></td><td>ICICI Nifty 100 Low Vol 30 ETF</td><td>Reduces crash depth significantly</td></tr>
+        <tr><td style="font-weight:700;color:var(--gold-dark);font-size:1.1rem">25%</td><td><span class="factor-chip chip-gold">Gold ETF</span></td><td>Tata Gold ETF / GoldBees</td><td>Crisis hedge + rebalancing fuel</td></tr>
+      </tbody>
+    </table>
+    <!-- Allocation visual bars -->
+    <div style="margin-top:1.25rem">
+      <div style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:.75rem">Visual Allocation</div>
+      <div style="display:flex;height:32px;border-radius:8px;overflow:hidden;gap:2px">
+        <div style="width:25%;background:#b5591a;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;border-radius:6px 0 0 6px">MOM 25%</div>
+        <div style="width:20%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff">QUAL 20%</div>
+        <div style="width:15%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff">VAL 15%</div>
+        <div style="width:15%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff">LOV 15%</div>
+        <div style="width:25%;background:var(--gold-dark);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;border-radius:0 6px 6px 0">GOLD 25%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annual Returns -->
+  <div class="section-block">
+    <h2>04 — Annual Returns 2007–2025</h2>
+    <div style="overflow-x:auto">
+    <table class="returns-table">
+      <thead><tr><th style="text-align:left">Year</th><th>Portfolio</th><th>Nifty 50</th><th>Momentum</th><th>Quality</th><th>Value</th><th>Gold</th></tr></thead>
+      <tbody id="factorReturnsBody"></tbody>
+    </table>
+    </div>
+    <div class="info-box blue" style="margin-top:1rem;margin-bottom:0"><strong>Rebalancing impact:</strong> ₹1L with annual rebalancing → ₹11.55L · Without rebalancing → ₹8.84L · Difference: ₹2.71L extra wealth from just 30 mins/year.</div>
+  </div>
+
+  <!-- Gold's Role -->
+  <div class="section-block">
+    <h2>05 — Gold's Role in the Portfolio</h2>
+    <p>Gold is not a speculative bet. It is a systematic defensive asset that rises when equity markets fall sharply — exactly when protection is needed most.</p>
+    <table class="styled-table">
+      <thead><tr><th>Year</th><th>Nifty 50</th><th>Gold</th><th>Portfolio</th><th>Key Takeaway</th></tr></thead>
+      <tbody>
+        <tr><td><strong>2008</strong></td><td class="ret-neg">−50.9%</td><td class="ret-pos-hi">+19.0%</td><td class="ret-neg">−34.8%</td><td>Gold saved 16% of additional drawdown vs pure equity</td></tr>
+        <tr><td><strong>2011</strong></td><td class="ret-neg">−21.7%</td><td class="ret-pos-hi">+32.7%</td><td class="ret-neg">−6.0%</td><td>A −21% Nifty year became just −6% with Gold</td></tr>
+        <tr><td><strong>2020</strong></td><td class="ret-pos">+14.4%</td><td class="ret-pos-hi">+25.4%</td><td class="ret-pos">+19.3%</td><td>Gold boosted the portfolio even in a recovery year</td></tr>
+        <tr><td><strong>2022</strong></td><td class="ret-pos">+1.6%</td><td class="ret-pos-hi">+13.9%</td><td class="ret-pos">+2.9%</td><td>Gold turned what could have been a loss into a gain</td></tr>
+        <tr><td><strong>2025</strong></td><td class="ret-pos">+12.4%</td><td class="ret-pos-hi">+69.6%</td><td class="ret-pos-hi">+20.8%</td><td>Gold's extraordinary year lifted the entire portfolio</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Six Rules -->
+  <div class="section-block">
+    <h2>06 — The Six Rules of Autopilot Investing</h2>
+    <div class="rules-grid">
+      <div class="rule-item"><div class="rule-num">01</div><div class="rule-text"><strong>Rebalance once every January.</strong> Check weights, sell what's grown above target, buy what's fallen below. 30 minutes. Done.</div></div>
+      <div class="rule-item"><div class="rule-num">02</div><div class="rule-text"><strong>Deploy new money to underweight sleeves.</strong> New capital goes to whichever ETF is most below its target weight. Automatic buy-low behaviour.</div></div>
+      <div class="rule-item"><div class="rule-num">03</div><div class="rule-text"><strong>Never question the 25% Gold allocation.</strong> Gold drags in strong bull years. That is expected. Every single crisis — 2008, 2011, 2020, 2022, 2025 — Gold rose while equities fell.</div></div>
+      <div class="rule-item"><div class="rule-num">04</div><div class="rule-text"><strong>Never make changes mid-year.</strong> Markets fall. A factor lags. The news is terrible. Your instinct says act. Do not act. Check in January. Do nothing now.</div></div>
+      <div class="rule-item"><div class="rule-num">05</div><div class="rule-text"><strong>Factor lag is part of the strategy.</strong> Value lagged 5 years (2013–2019). Then returned +58% in 2023. The system captures recovery — but only if you hold through the lag.</div></div>
+      <div class="rule-item"><div class="rule-num">06</div><div class="rule-text"><strong>Stop optimising — start executing.</strong> The portfolio is already optimised on 18 years of data. Resist adding a 6th factor or changing allocations based on recent performance.</div></div>
+    </div>
+  </div>
+
+  <!-- Tax note -->
+  <div class="section-block">
+    <h2>07 — Tax Considerations</h2>
+    <div class="info-box amber">ETF gains held for more than 1 year are taxed as LTCG at <strong>12.5%</strong> above ₹1.25L per financial year. Short term gains (under 1 year) are taxed at <strong>20%</strong>. Annual rebalancing may trigger LTCG — factor this into your planning. Consult your CA for personalised tax advice.</div>
+  </div>
+</div>
+
+<!-- ══ S8 DYNAMIC DETAIL ══ -->
+<div id="detail-s8" class="detail-panel">
+  <button class="detail-back" onclick="showList()">← Back to Strategies</button>
+
+  <div class="detail-header">
+    <div class="dh-inner">
+      <div class="dh-badge" style="background:var(--blue-light);color:var(--blue)">🔄 Dynamic · Monthly Signals · 17-Year Backtest</div>
+      <div class="dh-title">S8 Dynamic System v2.0</div>
+      <div class="dh-sub">GrowGuru Multi-Factor Advantage Fund · Backtested Jan 2009 – Dec 2025 · NSE Factor Index TRI Data</div>
+      <div class="dh-kpis">
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:#6fcf97">19.12%</div><div class="dh-kpi-lbl">17-yr CAGR</div></div>
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:#eb5757">−16.3%</div><div class="dh-kpi-lbl">Max Drawdown</div></div>
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:var(--gold)">1.416</div><div class="dh-kpi-lbl">Sharpe Ratio</div></div>
+        <div class="dh-kpi"><div class="dh-kpi-val" style="color:#6fcf97">₹19.6L</div><div class="dh-kpi-lbl">₹1L → ₹19.6L</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What is it -->
+  <div class="section-block">
+    <h2>01 — What Is This System?</h2>
+    <p>The S8 Dynamic System is a rule-based, regime-driven allocation engine. It does not predict markets. It reads two observable signals every month and repositions into one of four pre-defined allocations — nothing more.</p>
+    <div class="two-col" style="margin-top:1rem;margin-bottom:0">
+      <div>
+        <div class="info-box green"><strong>Three things create the edge:</strong><br>1. Drawdown control — max −16.3% vs −58% for Nifty in 2008–09<br>2. Factor rotation — right ETFs at the right time<br>3. Gold as a crisis engine — 35% in Bear+Fear</div>
+      </div>
+      <div>
+        <div class="info-box red"><strong>What this system is NOT:</strong><br>✗ Not a market timing tool — won't buy bottoms or sell tops<br>✗ Not a trading system — avg switch once every 3–4 months<br>✗ Not passive — monthly signal checks required without fail<br>✗ Not infallible — will underperform in strong bull years</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Signals -->
+  <div class="section-block">
+    <h2>02 — The Two Signals</h2>
+    <p>Every allocation decision is driven by exactly two data points. Nothing else. Checked once — on the last trading day of each month.</p>
+    <div class="two-col" style="margin-top:1rem;margin-bottom:0">
+      <div style="background:var(--green-light);border-radius:12px;padding:1.1rem">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1e6640;margin-bottom:.6rem">Signal 1 — Nifty 50 vs 21-Week Moving Average</div>
+        <div style="display:flex;gap:1rem;font-size:.83rem">
+          <div style="flex:1;background:#fff;border-radius:8px;padding:.75rem;border-left:4px solid var(--green)"><strong style="color:var(--green)">🟢 BULL</strong><br>Price ABOVE 21W MA<br><span style="color:#666;font-size:.78rem">Hold growth factors</span></div>
+          <div style="flex:1;background:#fff;border-radius:8px;padding:.75rem;border-left:4px solid #9c2323"><strong style="color:#9c2323">🔴 BEAR</strong><br>Price BELOW 21W MA<br><span style="color:#666;font-size:.78rem">Rotate to defensive</span></div>
+        </div>
+      </div>
+      <div style="background:var(--blue-light);border-radius:12px;padding:1.1rem">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:.6rem">Signal 2 — India VIX Level (nseindia.com)</div>
+        <div style="display:flex;gap:1rem;font-size:.83rem">
+          <div style="flex:1;background:#fff;border-radius:8px;padding:.75rem;border-left:4px solid var(--blue)"><strong style="color:var(--blue)">🔵 CALM</strong><br>VIX Below 20<br><span style="color:#666;font-size:.78rem">Momentum/Alpha work well</span></div>
+          <div style="flex:1;background:#fff;border-radius:8px;padding:.75rem;border-left:4px solid #856404"><strong style="color:#856404">🟡 FEAR</strong><br>VIX At or Above 20<br><span style="color:#666;font-size:.78rem">Shift to Quality/Gold</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Four Regimes -->
+  <div class="section-block">
+    <h2>03 — The Four Regimes &amp; Allocations</h2>
+    <p style="margin-bottom:1rem">The two signals combine to produce four regimes. Each has fixed, pre-defined allocation weights. No judgement. No adjustments. No exceptions.</p>
+    <div class="alloc-grid">
+
+      <div class="regime-card">
+        <h4><span class="regime-label rl-bull-calm">🟢 BULL + CALM</span> — Nifty above 21W MA, VIX &lt; 20 <span style="font-size:.7rem;color:#888;font-weight:400">(57% of time)</span></h4>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-mom" style="width:60px;font-size:.75rem">MOM</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:40%;background:#b5591a"></div></div><div class="alloc-bar-pct">40%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-alpha" style="width:60px;font-size:.75rem">ALPHA</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:var(--purple)"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-qual" style="width:60px;font-size:.75rem">QUAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:var(--blue)"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-gold" style="width:60px;font-size:.75rem">GOLD</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:10%;background:var(--gold-dark)"></div></div><div class="alloc-bar-pct">10%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-lovol" style="width:60px;font-size:.75rem">LOV</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:5%;background:var(--green)"></div></div><div class="alloc-bar-pct">5%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-val" style="width:60px;font-size:.75rem">VAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:5%;background:#856404"></div></div><div class="alloc-bar-pct">5%</div></div>
+      </div>
+
+      <div class="regime-card">
+        <h4><span class="regime-label rl-bull-fear">🟡 BULL + FEAR</span> — Nifty above 21W MA, VIX ≥ 20 <span style="font-size:.7rem;color:#888;font-weight:400">(18% of time)</span></h4>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-qual" style="width:60px;font-size:.75rem">QUAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:25%;background:var(--blue)"></div></div><div class="alloc-bar-pct">25%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-gold" style="width:60px;font-size:.75rem">GOLD</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:25%;background:var(--gold-dark)"></div></div><div class="alloc-bar-pct">25%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-mom" style="width:60px;font-size:.75rem">MOM</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:#b5591a"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-lovol" style="width:60px;font-size:.75rem">LOV</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:15%;background:var(--green)"></div></div><div class="alloc-bar-pct">15%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-val" style="width:60px;font-size:.75rem">VAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:10%;background:#856404"></div></div><div class="alloc-bar-pct">10%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-alpha" style="width:60px;font-size:.75rem">ALPHA</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:5%;background:var(--purple)"></div></div><div class="alloc-bar-pct">5%</div></div>
+      </div>
+
+      <div class="regime-card">
+        <h4><span class="regime-label rl-bear-calm">🔵 BEAR + CALM</span> — Nifty below 21W MA, VIX &lt; 20 <span style="font-size:.7rem;color:#888;font-weight:400">(14% of time)</span></h4>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-qual" style="width:60px;font-size:.75rem">QUAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:25%;background:var(--blue)"></div></div><div class="alloc-bar-pct">25%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-lovol" style="width:60px;font-size:.75rem">LOV</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:var(--green)"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-val" style="width:60px;font-size:.75rem">VAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:#856404"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-gold" style="width:60px;font-size:.75rem">GOLD</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:var(--gold-dark)"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-mom" style="width:60px;font-size:.75rem">MOM</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:10%;background:#b5591a"></div></div><div class="alloc-bar-pct">10%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-alpha" style="width:60px;font-size:.75rem">ALPHA</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:5%;background:var(--purple)"></div></div><div class="alloc-bar-pct">5%</div></div>
+      </div>
+
+      <div class="regime-card">
+        <h4><span class="regime-label rl-bear-fear">🔴 BEAR + FEAR</span> — Nifty below 21W MA, VIX ≥ 20 <span style="font-size:.7rem;color:#888;font-weight:400">(11% of time)</span></h4>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-gold" style="width:60px;font-size:.75rem">GOLD</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:35%;background:var(--gold-dark)"></div></div><div class="alloc-bar-pct">35%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-val" style="width:60px;font-size:.75rem">VAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:#856404"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-lovol" style="width:60px;font-size:.75rem">LOV</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:20%;background:var(--green)"></div></div><div class="alloc-bar-pct">20%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-qual" style="width:60px;font-size:.75rem">QUAL</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:15%;background:var(--blue)"></div></div><div class="alloc-bar-pct">15%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-mom" style="width:60px;font-size:.75rem">MOM</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:5%;background:#b5591a"></div></div><div class="alloc-bar-pct">5%</div></div>
+        <div class="alloc-bar-row"><div class="alloc-bar-label chip-alpha" style="width:60px;font-size:.75rem">ALPHA</div><div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:5%;background:var(--purple)"></div></div><div class="alloc-bar-pct">5%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ETFs -->
+  <div class="section-block">
+    <h2>04 — The Six ETF Instruments</h2>
+    <table class="styled-table">
+      <thead><tr><th>Factor</th><th>ETF Name</th><th>Role</th><th>Peak Weight</th></tr></thead>
+      <tbody>
+        <tr><td><span class="factor-chip chip-mom">MOM</span></td><td>Nifty 200 Momentum 30 ETF</td><td>Primary growth engine in calm uptrends. High-momentum stocks continue trending.</td><td><strong>40%</strong> in Bull+Calm</td></tr>
+        <tr><td><span class="factor-chip chip-qual">QUAL</span></td><td>Nifty 200 Quality 30 ETF</td><td>Defensive anchor. High ROE, low debt, stable earnings. Leads in fear environments.</td><td><strong>25%</strong> in Bull+Fear &amp; Bear+Calm</td></tr>
+        <tr><td><span class="factor-chip chip-alpha">ALPHA</span></td><td>Nifty Alpha Low-Vol 30 ETF</td><td>High-alpha + low-volatility combined. Works best in calm, trending markets.</td><td><strong>20%</strong> in Bull+Calm</td></tr>
+        <tr><td><span class="factor-chip chip-lovol">LOWVOL</span></td><td>Nifty 100 Low-Vol 30 ETF</td><td>Declines less in selloffs. Core defensive equity in bear markets.</td><td><strong>20%</strong> in Bear regimes</td></tr>
+        <tr><td><span class="factor-chip chip-val">VALUE</span></td><td>Nifty 200 Value 30 ETF</td><td>Low PE, high dividend yield. Often leads recovery from orderly corrections.</td><td><strong>20%</strong> in Bear regimes</td></tr>
+        <tr><td><span class="factor-chip chip-gold">GOLD</span></td><td>GoldBees / Nippon Gold ETF</td><td>Crisis profit engine. 35% in Bear+Fear turns crash years flat or positive.</td><td><strong>35%</strong> in Bear+Fear</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Monthly Process -->
+  <div class="section-block">
+    <h2>05 — Monthly Process (5–10 minutes at month end)</h2>
+    <div class="rules-grid" style="grid-template-columns:1fr 1fr">
+      <div class="rule-item"><div class="rule-num" style="color:var(--blue)">1</div><div class="rule-text"><strong>Check Signal 1</strong> — On the last trading day, check whether Nifty 50 is above or below its 21-week moving average. Result: BULL or BEAR.</div></div>
+      <div class="rule-item"><div class="rule-num" style="color:var(--blue)">2</div><div class="rule-text"><strong>Check Signal 2</strong> — On the same day, check India VIX on nseindia.com. Result: CALM (below 20) or FEAR (at/above 20).</div></div>
+      <div class="rule-item"><div class="rule-num" style="color:var(--blue)">3</div><div class="rule-text"><strong>Identify Regime</strong> — Combine both results. E.g. Nifty above MA + VIX below 20 = BULL + CALM. Refer to the regime table above.</div></div>
+      <div class="rule-item"><div class="rule-num" style="color:var(--blue)">4</div><div class="rule-text"><strong>Regime Changed?</strong> — Compare today's regime to last month's. If the same — do nothing. Rebalance only when the regime has changed.</div></div>
+      <div class="rule-item"><div class="rule-num" style="color:var(--blue)">5</div><div class="rule-text"><strong>Rebalance if Changed</strong> — Adjust portfolio to new regime's weights within 2–3 trading days. Execute sells first, then buys.</div></div>
+      <div class="rule-item"><div class="rule-num" style="color:var(--blue)">—</div><div class="rule-text"><strong>Check frequency:</strong> Bull+Calm 57% · Bull+Fear 18% · Bear+Calm 14% · Bear+Fear 11% of all months historically.</div></div>
+    </div>
+  </div>
+
+  <!-- Standout Performance -->
+  <div class="section-block">
+    <h2>06 — Standout Performance Years</h2>
+    <table class="styled-table">
+      <thead><tr><th>Year</th><th>S8 Return</th><th>Nifty</th><th>Context</th></tr></thead>
+      <tbody>
+        <tr><td><strong>2011</strong></td><td class="ret-neg">−6.4%</td><td class="ret-neg-hi">−24.6%</td><td>Euro crisis — regime filter protected 18% of capital vs Nifty</td></tr>
+        <tr><td><strong>2015</strong></td><td class="ret-pos">+6.8%</td><td class="ret-neg">−4.1%</td><td>China slowdown — system stayed positive while Nifty fell</td></tr>
+        <tr><td><strong>2020</strong></td><td class="ret-pos-hi">+28.8%</td><td class="ret-pos">+14.9%</td><td>COVID crash — Bear+Fear regime, Gold rallied in the crisis</td></tr>
+        <tr><td><strong>2022</strong></td><td class="ret-pos-hi">+10.5%</td><td class="ret-neg">−0.5%</td><td>Global rate hike cycle — system clearly positive vs flat Nifty</td></tr>
+        <tr><td><strong>2023</strong></td><td class="ret-pos-hi">+46.0%</td><td class="ret-pos">+20.0%</td><td>Bull+Calm all year — full Momentum allocation captured the rally</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 17 Operating Rules -->
+  <div class="section-block">
+    <h2>07 — The 17 Operating Rules</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem" id="s8Rules"></div>
+  </div>
+
+  <!-- Mindset -->
+  <div class="section-block">
+    <h2>08 — Mindset — The Real Differentiator</h2>
+    <div class="info-box blue">
+      <strong>Two investors. Same system. Completely different outcomes.</strong><br><br>
+      One panics when the Bear+Fear regime activates. They override the signal, skip the rebalance, and tell themselves the market will recover next week. They break the compounding chain.<br><br>
+      The other follows every rule, stays the course through uncomfortable months, and lets 17 years of tested data do the work.<br><br>
+      <strong style="color:var(--blue)">The system is identical. The outcome is not. Your mindset is the edge no backtest can give you.</strong>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ── Annual returns data (Factor) ──────────────────────────────────────────────
+const FACTOR_RETURNS = [
+  [2007,'+53.5%','+54.8%','+96.4%','+47.0%','+81.5%','+14.3%'],
+  [2008,'−34.8%','−50.9%','−60.5%','−51.2%','−50.9%','+19.0%'],
+  [2009,'+76.8%','+81.0%','+63.6%','+121.5%','+115.4%','+25.6%'],
+  [2010,'+22.4%','+17.0%','+17.0%','+24.9%','+28.9%','+21.7%'],
+  [2011,'−6.0%','−21.7%','−17.6%','−11.6%','−36.1%','+32.7%'],
+  [2012,'+28.1%','+26.5%','+38.3%','+29.3%','+40.9%','+8.2%'],
+  [2013,'+3.3%','+4.4%','+10.8%','+17.0%','−15.4%','−4.5%'],
+  [2014,'+29.1%','+36.0%','+47.6%','+37.6%','+48.0%','−10.9%'],
+  [2015,'−1.5%','−3.9%','+9.6%','+0.8%','−23.3%','−7.2%'],
+  [2016,'+7.1%','+7.7%','+7.7%','−0.8%','+19.8%','+8.6%'],
+  [2018,'+0.2%','+0.4%','−1.9%','+7.5%','−21.2%','+5.7%'],
+  [2019,'+8.2%','+13.3%','+9.8%','+4.0%','−11.2%','+24.1%'],
+  [2020,'+19.3%','+14.4%','+18.9%','+24.3%','+1.2%','+25.4%'],
+  [2021,'+25.5%','+21.0%','+51.1%','+23.1%','+41.6%','−5.4%'],
+  [2022,'+2.9%','+1.6%','−7.5%','−7.1%','+19.1%','+13.9%'],
+  [2023,'+32.4%','+21.6%','+40.2%','+30.2%','+58.3%','+11.9%'],
+  [2024,'+17.8%','+9.6%','+19.6%','+12.4%','+20.2%','+22.8%'],
+  [2025,'+20.8%','+12.4%','−5.4%','+2.8%','+18.3%','+69.6%'],
+];
+function colourClass(v){
+  const n=parseFloat(v.replace('−','-').replace('+',''));
+  if(n>=20) return 'ret-pos-hi';
+  if(n>0) return 'ret-pos';
+  if(n>-10) return 'ret-neg';
+  return 'ret-neg-hi';
+}
+const tbody=document.getElementById('factorReturnsBody');
+FACTOR_RETURNS.forEach(r=>{
+  tbody.innerHTML+=`<tr>
+    <td><strong>${r[0]}</strong></td>
+    ${r.slice(1).map((v,i)=>`<td class="${colourClass(v)}">${v}</td>`).join('')}
+  </tr>`;
+});
+
+// ── S8 17 operating rules ─────────────────────────────────────────────────────
+const S8_RULES=[
+  ['R1','No discretion. No overrides. The two signals dictate the allocation — always.'],
+  ['R2','Check signals on the last trading day of each month. Act within 2–3 trading days. Never mid-month.'],
+  ['R3','Underperformance in strong bull years is not a failure. It is the system working as designed.'],
+  ['R4','If an ETF becomes illiquid, replace it with the nearest equivalent for the same factor only.'],
+  ['R5','Use limit orders within 0.2% of market price. Avoid the opening 15 minutes and closing auction.'],
+  ['R6','Never rebalance more than once per calendar month. Month-end signal confirmation only.'],
+  ['R7','Minimum rebalance threshold: ₹5,000 or 1% of portfolio value per ETF, whichever is lower.'],
+  ['R8','Execute sells first, then buys. Schedule buys for T+1 or T+2 after sell proceeds clear.'],
+  ['R9','Use the ₹1.25L LTCG annual exemption every financial year without fail.'],
+  ['R10','Do not delay a rebalance to avoid STCG tax. The regime signal always overrides tax optimisation.'],
+  ['R11','Hold GoldBees for 24+ months wherever possible to qualify for LTCG at 12.5%.'],
+  ['R12','Harvest tax losses before March 31 every year. Small losses offset future LTCG gains.'],
+  ['R13','Deploy new capital at current regime weights before selling any existing positions.'],
+  ['R14','Accept whipsaws. Do not add confirmation delays. Missing a real crisis switch is catastrophic.'],
+  ['R15','Do not re-enter the previous regime early because the market appears to be recovering. Wait for month-end signal.'],
+  ['R16','Prolonged bear regimes feel deeply uncomfortable. Trust the 21-week MA. It will confirm recovery when real.'],
+  ['R17','When VIX oscillates around 20 for several months, accept frequent switches. The friction is the price of protection.'],
+];
+const s8c=document.getElementById('s8Rules');
+S8_RULES.forEach(([num,text])=>{
+  s8c.innerHTML+=`<div class="rule-item"><div class="rule-num" style="color:var(--blue)">${num}</div><div class="rule-text">${text}</div></div>`;
+});
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showDetail(id){
+  document.getElementById('listView').style.display='none';
+  document.querySelectorAll('.detail-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('detail-'+id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function showList(){
+  document.getElementById('listView').style.display='block';
+  document.querySelectorAll('.detail-panel').forEach(p=>p.classList.remove('active'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

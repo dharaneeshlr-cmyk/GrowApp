@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Tracker — BudgetCraft</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f0e0d;--paper:#f5f0e8;--cream:#ede7d9;--cream2:#e4ddd0;
+  --gold:#c9a84c;--gold-light:#e8d49a;--gold-dark:#8a6d2f;
+  --green:#2d6a4f;--green-light:#d8f3dc;
+  --red:#9c2323;--red-light:#f5d6d6;
+  --blue:#1d3557;--blue-light:#d6e4f0;
+  --purple:#7b2d8b;--purple-light:#ead6f0;
+  --shadow:0 4px 24px rgba(15,14,13,.09);--shadow-lg:0 12px 40px rgba(15,14,13,.16);
+  --radius:16px;--radius-sm:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh}
+
+/* ── Nav ── */
+nav{background:var(--ink);color:var(--paper);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:66px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.25)}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-icon{width:36px;height:36px;background:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.nav-title{font-family:'DM Serif Display',serif;font-size:1.4rem;letter-spacing:-.02em;color:var(--paper)}
+.nav-right{display:flex;align-items:center;gap:.6rem}
+.btn-n{padding:7px 14px;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;border:none;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .18s;text-decoration:none}
+.btn-settings{background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.18)}
+.btn-settings:hover{background:rgba(255,255,255,.2);color:#fff}
+.btn-sync{background:var(--gold);color:var(--ink);font-weight:600}
+.btn-sync:hover{background:var(--gold-light)}
+.btn-sync:disabled{opacity:.5;cursor:not-allowed}
+.btn-home{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.14)}
+.btn-home:hover{background:rgba(255,255,255,.16);color:#fff}
+.btn-logout{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.18)}
+.btn-logout:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* loading bar */
+.lbar{position:fixed;top:0;left:0;height:3px;background:var(--gold);width:0;transition:width .3s;z-index:999}
+.lbar.on{width:65%}.lbar.done{width:100%}
+
+/* ── Hero strip ── */
+.hero-strip{background:var(--ink);color:var(--paper);padding:2rem 2rem 2.5rem;position:relative;overflow:hidden}
+.hero-strip::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.06) 1px,transparent 1px);background-size:44px 44px;animation:grid 30s linear infinite}
+@keyframes grid{from{background-position:0 0}to{background-position:44px 44px}}
+.hero-inner{position:relative;z-index:1;max-width:1260px;margin:0 auto}
+.hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
+.hero-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(201,168,76,.7);font-weight:600;margin-bottom:.3rem}
+.hero-title{font-family:'DM Serif Display',serif;font-size:1.9rem;letter-spacing:-.02em}
+.hero-sync-info{font-size:.78rem;color:rgba(245,240,232,.45);margin-top:.2rem}
+.hero-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem}
+.hkpi{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:.9rem 1rem;backdrop-filter:blur(8px)}
+.hkpi-label{font-size:.67rem;text-transform:uppercase;letter-spacing:.09em;opacity:.5;margin-bottom:4px;font-weight:600}
+.hkpi-val{font-family:'DM Serif Display',serif;font-size:1.35rem;line-height:1}
+.hkpi-val.pos{color:#6fcf97}.hkpi-val.neg{color:#eb5757}.hkpi-val.gold{color:var(--gold)}
+.hkpi-sub{font-size:.7rem;opacity:.45;margin-top:3px}
+
+/* ── Connection status banner ── */
+.conn-banner{max-width:1260px;margin:.75rem auto 0;padding:0 2rem}
+.status-pill{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:600}
+.pill-connected{background:var(--green-light);color:#1e6640}
+.pill-connected::before{content:'';width:7px;height:7px;border-radius:50%;background:#2d6a4f}
+.pill-disconnected{background:#fff3cd;color:#856404}
+.pill-disconnected::before{content:'';width:7px;height:7px;border-radius:50%;background:#f0ad4e}
+
+/* ── Tabs ── */
+.tab-bar{max-width:1260px;margin:0 auto;padding:1.25rem 2rem .5rem;display:flex;gap:6px;border-bottom:1px solid var(--cream2)}
+.tab{background:none;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;color:#888;transition:all .18s}
+.tab.active{background:var(--ink);color:var(--paper);font-weight:600}
+.tab:hover:not(.active){background:var(--cream);color:var(--ink)}
+
+/* ── Main ── */
+main{max-width:1260px;margin:0 auto;padding:1.5rem 2rem 4rem}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* ── Grid utilities ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.col-span-2{grid-column:1/-1}
+
+/* ── Cards ── */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.4rem;margin-bottom:1.25rem}
+.card-title{font-family:'DM Serif Display',serif;font-size:1.05rem;margin-bottom:1.1rem;display:flex;align-items:center;justify-content:space-between}
+.card-title small{font-family:'DM Sans',sans-serif;font-size:.72rem;color:#bbb;font-weight:400}
+canvas{max-height:280px}
+
+/* ── Holdings table ── */
+.htable-wrap{overflow-x:auto}
+.htable{width:100%;border-collapse:collapse}
+.htable th{padding:8px 12px;text-align:right;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#bbb;background:var(--paper);white-space:nowrap}
+.htable th:first-child,.htable th:nth-child(2){text-align:left}
+.htable td{padding:10px 12px;font-size:.84rem;border-bottom:1px solid var(--cream);text-align:right;white-space:nowrap}
+.htable td:first-child,.htable td:nth-child(2){text-align:left}
+.htable tr:hover td{background:#fafaf8}
+.htable .total-row td{background:var(--paper);font-weight:700;border-top:2px solid var(--cream2)}
+.htable tr:last-child td{border-bottom:none}
+.sym-badge{font-weight:700;font-size:.82rem;letter-spacing:.02em}
+.exch-tag{font-size:.67rem;background:var(--cream);padding:1px 6px;border-radius:4px;color:#888;margin-left:4px;vertical-align:middle}
+.pnl-pos{color:var(--green);font-weight:600}
+.pnl-neg{color:var(--red);font-weight:600}
+.chg-pos{color:var(--green)}.chg-neg{color:var(--red)}
+.col-bar{width:80px;height:5px;background:var(--cream);border-radius:3px;display:inline-block;vertical-align:middle;overflow:hidden;margin-left:6px}
+.col-fill-pos{height:100%;background:var(--green);border-radius:3px}
+.col-fill-neg{height:100%;background:var(--red);border-radius:3px}
+
+/* ── Sort controls ── */
+.table-controls{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap}
+.sort-btn{background:none;border:1.5px solid var(--cream);padding:5px 12px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;color:#888;transition:all .15s}
+.sort-btn.active{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.search-box{border:1.5px solid var(--cream);border-radius:7px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:.82rem;outline:none;transition:border-color .15s;flex:1;min-width:160px;max-width:240px}
+.search-box:focus{border-color:var(--gold)}
+.filter-tag{font-size:.75rem;color:#aaa;margin-left:auto}
+
+/* ── Sector pie ── */
+.donut-grid{display:grid;grid-template-columns:180px 1fr;gap:1.25rem;align-items:center}
+.legend-list{display:flex;flex-direction:column;gap:6px}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:.8rem}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-name{flex:1;color:#555}
+.legend-pct{font-weight:600;color:var(--ink)}
+.legend-val{font-size:.72rem;color:#bbb;margin-left:2px}
+
+/* ── P&L breakdown ── */
+.pnl-row{display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--cream)}
+.pnl-row:last-child{border-bottom:none}
+.pnl-sym{font-weight:600;font-size:.85rem}
+.pnl-bar-wrap{flex:1;margin:0 1rem;height:5px;background:var(--cream);border-radius:3px;overflow:hidden}
+.pnl-bar-fill{height:100%;border-radius:3px}
+
+/* ── Connect panel ── */
+.connect-panel{max-width:560px;margin:3rem auto;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:2.5rem;text-align:center}
+.connect-icon{font-size:3rem;margin-bottom:1rem}
+.connect-title{font-family:'DM Serif Display',serif;font-size:1.6rem;margin-bottom:.5rem}
+.connect-sub{font-size:.88rem;color:#888;line-height:1.6;margin-bottom:2rem}
+.steps{text-align:left;background:var(--paper);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.75rem}
+.step{display:flex;gap:10px;margin-bottom:.75rem;font-size:.85rem;line-height:1.5}
+.step:last-child{margin-bottom:0}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.btn-connect{background:var(--ink);color:var(--paper);border:none;padding:12px 28px;border-radius:12px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.95rem;cursor:pointer;width:100%;transition:background .2s;margin-bottom:.75rem}
+.btn-connect:hover{background:#2a2520}
+.btn-connect-outline{background:none;border:1.5px solid var(--cream);color:var(--ink);padding:10px 28px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;width:100%;transition:all .2s}
+.btn-connect-outline:hover{border-color:var(--ink)}
+
+/* ── Modals ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,14,13,.55);backdrop-filter:blur(4px);z-index:300;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:18px;padding:2rem;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.28);animation:slideUp .22s ease;max-height:90vh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal h2{font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:.35rem}
+.modal-sub{font-size:.82rem;color:#aaa;margin-bottom:1.5rem}
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:5px;font-weight:600}
+.form-group input{width:100%;font-family:'DM Sans',sans-serif;font-size:.92rem;padding:9px 12px;border:1.5px solid var(--cream);border-radius:9px;outline:none;transition:border-color .15s;color:var(--ink)}
+.form-group input:focus{border-color:var(--gold)}
+.form-note{font-size:.78rem;color:#aaa;margin-top:5px;line-height:1.5}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem}
+.btn-m-cancel{padding:9px 18px;border-radius:9px;border:1.5px solid var(--cream);background:#fff;font-family:'DM Sans',sans-serif;cursor:pointer;font-size:.88rem}
+.btn-m-cancel:hover{background:var(--cream)}
+.btn-m-save{padding:9px 22px;border-radius:9px;background:var(--ink);color:var(--paper);border:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer}
+.btn-m-save:hover{background:#2a2520}
+.divider-line{border:none;border-top:1px solid var(--cream);margin:1.25rem 0}
+.token-note{background:#f0fff4;border:1px solid #b7ebc6;border-radius:8px;padding:.75rem 1rem;font-size:.8rem;color:#1e6640;line-height:1.6;margin-bottom:1rem}
+.error-note{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.75rem 1rem;font-size:.8rem;color:#856404;line-height:1.6;margin-bottom:1rem}
+/* Method tabs inside modal */
+/* method tabs removed — TOTP-only settings */
+.method-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-left:6px;vertical-align:middle}
+.badge-recommended{background:#d8f3dc;color:#1e6640}
+.badge-daily{background:#fff3cd;color:#856404}
+.badge-easy{background:var(--cc-light,#ddeeff);color:#0d47a1}
+.info-box{border-radius:8px;padding:.75rem 1rem;font-size:.8rem;line-height:1.65;margin-bottom:.9rem}
+.info-box.green{background:#f0fff4;border:1px solid #b7ebc6;color:#1e6640}
+.info-box.blue{background:#e8f4fd;border:1px solid #b3d9f5;color:#1d3557}
+.info-box.amber{background:#fff8e1;border:1px solid #ffe082;color:#795548}
+.info-box.purple{background:#f3e5f5;border:1px solid #ce93d8;color:#4a148c}
+.code-block{background:var(--ink);color:#e8d49a;padding:.65rem .9rem;border-radius:7px;font-family:monospace;font-size:.78rem;line-height:1.6;margin:.5rem 0;white-space:pre-wrap;word-break:break-all}
+.copy-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:2px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;float:right;margin-top:-2px}
+.copy-btn:hover{background:rgba(255,255,255,.1)}
+.step-list{list-style:none;counter-reset:steps;margin:.5rem 0}
+.step-list li{counter-increment:steps;display:flex;gap:9px;margin-bottom:.55rem;font-size:.82rem;line-height:1.5}
+.step-list li::before{content:counter(steps);min-width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:1.75rem;right:1.75rem;background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:10px;font-size:.85rem;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(8px);transition:all .3s;z-index:500;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:3rem 2rem;color:#bbb}
+.empty-icon{font-size:2.5rem;margin-bottom:.75rem}
+.empty-text{font-size:.88rem;line-height:1.6}
+
+@media(max-width:1000px){.hero-kpis{grid-template-columns:repeat(3,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}}
+@media(max-width:640px){nav{padding:0 1rem;flex-wrap:wrap;height:auto;padding:.6rem 1rem;gap:.4rem}.hero-strip{padding:1.5rem 1rem 2rem}.hero-kpis{grid-template-columns:repeat(2,1fr)}main{padding:1rem 1rem 3rem}.tab-bar{padding:1rem 1rem .5rem}}
+</style>
+</head>
+<body>
+<div class="lbar" id="lbar"></div>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-icon">📈</div>
+    <div class="nav-title">Investment Tracker</div>
+  </div>
+  <div class="nav-right">
+    <button class="btn-n btn-settings" onclick="openSettings()">⚙ Kite Settings</button>
+    <button class="btn-n" id="loginBtn" onclick="runAutoLogin()" style="background:#2d6a4f;color:#fff;font-weight:600;border:none">🔐 Get Token</button>
+    <button class="btn-n btn-sync" id="syncBtn" onclick="syncHoldings()">⟳ Sync Holdings</button>
+    <a href="/home" class="btn-n btn-home">🏠 Home</a>
+    <a href="/logout" class="btn-n btn-logout">🚪 Logout</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero-strip">
+  <div class="hero-inner">
+    <div class="hero-top">
+      <div>
+        <div class="hero-label">Zerodha · Kite Connect</div>
+        <div class="hero-title">Portfolio Dashboard</div>
+        <div class="hero-sync-info" id="syncInfo">Last synced: —</div>
+      </div>
+      <div id="statusBadge"></div>
+    </div>
+    <div class="hero-kpis" style="grid-template-columns:repeat(7,1fr)">
+      <div class="hkpi"><div class="hkpi-label">Total Portfolio</div><div class="hkpi-val gold" id="hkpi-value">₹0</div><div class="hkpi-sub">Equity + MF</div></div>
+      <div class="hkpi"><div class="hkpi-label">Equity Value</div><div class="hkpi-val" id="hkpi-eq-value">₹0</div><div class="hkpi-sub" id="hkpi-eq-sub">Incl. pledged</div></div>
+      <div class="hkpi"><div class="hkpi-label">MF Value</div><div class="hkpi-val" id="hkpi-mf-value">₹0</div><div class="hkpi-sub" id="hkpi-mf-sub">Mutual funds</div></div>
+      <div class="hkpi"><div class="hkpi-label">Total P&amp;L</div><div class="hkpi-val" id="hkpi-pnl">₹0</div><div class="hkpi-sub" id="hkpi-pnl-pct">0%</div></div>
+      <div class="hkpi"><div class="hkpi-label">Today's Change</div><div class="hkpi-val" id="hkpi-day">₹0</div><div class="hkpi-sub" id="hkpi-day-pct">0%</div></div>
+      <div class="hkpi"><div class="hkpi-label">Stocks / Pledged</div><div class="hkpi-val" id="hkpi-count">0</div><div class="hkpi-sub" id="hkpi-pledged-sub">0 pledged</div></div>
+      <div class="hkpi"><div class="hkpi-label">Winners / Losers</div><div class="hkpi-val" id="hkpi-wl">—</div><div class="hkpi-sub">Profit / Loss stocks</div></div>
+    </div>
+  </div>
+  <div class="conn-banner"><div id="connBanner"></div></div>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+  <button class="tab active" onclick="switchTab('holdings',this)">📋 Holdings</button>
+  <button class="tab" onclick="switchTab('mf',this)">📂 Mutual Funds</button>
+  <button class="tab" onclick="switchTab('analysis',this)">📊 Analysis</button>
+  <button class="tab" onclick="switchTab('pnl',this)">💹 P&amp;L Breakdown</button>
+  <button class="tab" onclick="switchTab('trend',this)">📈 Portfolio Trend</button>
+</div>
+
+<main>
+
+<!-- ═══ HOLDINGS TAB ═══ -->
+<div id="tab-holdings" class="tab-content active">
+  <div class="table-controls">
+    <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search symbol…" oninput="filterTable()">
+    <button class="sort-btn active" onclick="sortBy('value',this)">By Value</button>
+    <button class="sort-btn" onclick="sortBy('pnl',this)">By P&L</button>
+    <button class="sort-btn" onclick="sortBy('pnl_pct',this)">By P&L %</button>
+    <button class="sort-btn" onclick="sortBy('day',this)">By Day %</button>
+    <button class="sort-btn" onclick="sortBy('sym',this)">A–Z</button>
+    <span class="filter-tag" id="filterTag"></span>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="htable-wrap">
+      <table class="htable" id="holdingsTable">
+        <thead>
+          <tr>
+            <th>Symbol</th><th>Exchange</th>
+            <th>Qty</th><th>Avg Price</th><th>LTP</th>
+            <th>Invested</th><th>Curr. Value</th>
+            <th>P&amp;L (₹)</th><th>P&amp;L %</th>
+            <th>Day Change</th><th>Day %</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsTbody"></tbody>
+        <tfoot id="holdingsTfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ANALYSIS TAB ═══ -->
+<div id="tab-analysis" class="tab-content">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Exchange Allocation <small>NSE vs BSE</small></div>
+      <div class="donut-grid">
+        <canvas id="chartExch" width="180" height="180"></canvas>
+        <div class="legend-list" id="exchLegend"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top 10 Holdings by Value <small>% of portfolio</small></div>
+      <canvas id="chartTop10"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">P&amp;L Distribution <small>Winners vs Losers</small></div>
+      <canvas id="chartPnlDist"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Portfolio Concentration <small>Top holdings as % of total</small></div>
+      <canvas id="chartConc"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Individual Stock Allocation <small>All holdings</small></div>
+    <canvas id="chartAlloc"></canvas>
+  </div>
+</div>
+
+<!-- ═══ P&L BREAKDOWN TAB ═══ -->
+<div id="tab-pnl" class="tab-content">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Top Gainers 🟢 <small id="gainerSub"></small></div>
+      <div id="gainers"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Losers 🔴 <small id="loserSub"></small></div>
+      <div id="losers"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Full P&amp;L Chart <small>All holdings sorted by absolute P&L</small></div>
+    <canvas id="chartFullPnl"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Day Change Leaders <small>Today's movers</small></div>
+    <canvas id="chartDayChange"></canvas>
+  </div>
+</div>
+
+<!-- ═══ TREND TAB ═══ -->
+<div id="tab-trend" class="tab-content">
+  <div class="card">
+    <div class="card-title">Portfolio Value Over Time <small id="trendCount"></small>
+      <button onclick="clearSnapshots()" style="background:none;border:1px solid var(--cream);padding:4px 10px;border-radius:6px;font-size:.75rem;cursor:pointer;color:#aaa">Clear History</button>
+    </div>
+    <canvas id="chartTrend"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Cumulative P&amp;L Over Time</div>
+    <canvas id="chartPnlTrend"></canvas>
+  </div>
+</div>
+
+<!-- ═══ MUTUAL FUNDS TAB ═══ -->
+<div id="tab-mf" class="tab-content">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+    <div>
+      <div style="font-family:'DM Serif Display',serif;font-size:1.3rem">📂 Mutual Fund Holdings</div>
+      <div style="font-size:.82rem;color:#888;margin-top:2px">Coin / DEMAT MF holdings via <code>/mf/holdings</code></div>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap" id="mfSummaryStrip"></div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="htable" id="mfTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">Fund Name</th>
+            <th>Units</th><th>Avg NAV</th><th>Current NAV</th>
+            <th>Invested</th><th>Current Value</th>
+            <th>P&amp;L (₹)</th><th>P&amp;L %</th>
+          </tr>
+        </thead>
+        <tbody id="mfTbody"></tbody>
+        <tfoot id="mfTfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- Auto-Login Progress Modal -->
+<div class="modal-overlay" id="autoLoginModal">
+  <div class="modal" style="max-width:420px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.1rem">
+      <span style="font-size:1.4rem">🔐</span>
+      <h2 style="margin:0;font-size:1.15rem">Kite Auto-Login</h2>
+    </div>
+    <div id="alStatus" style="font-size:.88rem;color:#666;margin-bottom:1rem">Connecting to Zerodha…</div>
+    <div id="alSteps" style="font-size:.84rem;line-height:2;background:var(--paper,#f5f0e8);border-radius:8px;padding:.75rem 1rem;min-height:60px;font-family:monospace"></div>
+    <div id="alError" style="display:none;margin-top:.75rem;padding:.7rem 1rem;background:#fff2f2;border:1.5px solid #fbc8c8;border-radius:8px;color:#c0392b;font-size:.84rem;line-height:1.6"></div>
+    <div id="alSuccess" style="display:none;margin-top:.75rem;padding:.7rem 1rem;background:#f0fff4;border:1.5px solid #b7ebc6;border-radius:8px;color:#1e6640;font-size:.84rem"></div>
+    <div style="margin-top:1rem;display:flex;justify-content:flex-end;gap:.6rem">
+      <button onclick="closeModal('autoLoginModal')" style="padding:7px 18px;border-radius:8px;border:1.5px solid var(--cream,#ede7d9);background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem" id="alCloseBtn">Close</button>
+      <button onclick="syncHoldings();closeModal('autoLoginModal')" id="alSyncBtn" style="display:none;padding:7px 18px;border-radius:8px;background:#2d6a4f;color:#fff;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.85rem">⟳ Sync Holdings Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal — TOTP Auto-Login -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal" style="max-width:580px">
+    <h2>⚙ Kite Connect Settings</h2>
+    <div class="modal-sub" id="cfgStatusLine">Configure TOTP auto-login to sync your Zerodha holdings.</div>
+    <div id="settingsError"></div>
+
+    <!-- Credentials -->
+    <div class="form-group">
+      <label>API Key <span style="font-size:.7rem;color:#aaa;font-weight:400">— from developers.kite.trade → My Apps</span></label>
+      <input type="text" id="cfgApiKey" placeholder="e.g. abcdef1234567890">
+    </div>
+    <div class="form-group">
+      <label>API Secret</label>
+      <input type="password" id="cfgApiSecret" placeholder="Keep this private">
+    </div>
+    <div class="divider-line" style="margin:.75rem 0"></div>
+
+    <!-- TOTP Script section -->
+    <div class="info-box purple" style="margin-bottom:1rem">
+      <strong>🤖 How TOTP Auto-Login works:</strong><br>
+      Run <code>kite_auto_login.py</code> once each morning — it logs into Zerodha using your
+      user ID + password + TOTP secret automatically, gets a fresh access token, and saves it
+      to <code>budget.db</code>. Then just click <strong>Sync Holdings</strong>.
+    </div>
+
+    <div style="font-size:.8rem;font-weight:600;color:#555;margin-bottom:.4rem">Step 1 — Install dependencies</div>
+    <div class="code-block" style="margin-bottom:1rem">pip install requests pyotp</div>
+
+    <div style="font-size:.8rem;font-weight:600;color:#555;margin-bottom:.4rem">
+      Step 2 — Fill in your credentials below, then copy the generated script
+    </div>
+    <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+      <div class="form-group" style="margin:0">
+        <label>Zerodha User ID</label>
+        <input type="text" id="cfgUserId" placeholder="e.g. AB1234" oninput="rebuildScript()">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Login Password</label>
+        <input type="password" id="cfgPassword" placeholder="Zerodha login password" oninput="rebuildScript()">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:.75rem">
+      <label>TOTP Secret Key <span style="font-size:.7rem;color:#aaa;font-weight:400">— 32-char base32 from Zerodha 2FA setup</span></label>
+      <input type="password" id="cfgTotpSecret" placeholder="e.g. JBSWY3DPEHPK3PXP..." oninput="rebuildScript()">
+      <div class="form-note">⚠ This is the <strong>secret key</strong> (shown when you scan the QR code during 2FA setup), NOT a TOTP code. Use a QR reader app on the Zerodha 2FA page to extract it.</div>
+    </div>
+
+    <div style="font-size:.8rem;font-weight:600;color:#555;margin-bottom:.4rem">Generated script — <code>kite_auto_login.py</code></div>
+    <div class="code-block" id="totpScript" style="max-height:260px;overflow-y:auto;font-size:.72rem;line-height:1.55"></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem;margin-bottom:1rem">
+      <button onclick="copyScript()" style="flex:1;background:var(--ink);color:var(--paper);border:none;padding:8px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;font-weight:600">📋 Copy Script</button>
+      <button onclick="saveAndDownloadScript()" style="flex:1;background:var(--purple);color:#fff;border:none;padding:8px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;font-weight:600">⬇ Download Script</button>
+    </div>
+
+    <div class="info-box blue" style="font-size:.78rem">
+      <strong>Step 3 — Run the script each morning before syncing:</strong><br>
+      <code>python kite_auto_login.py</code><br><br>
+      <strong>Or schedule it automatically (Mac crontab):</strong><br>
+      Run <code>crontab -e</code> and add:<br>
+      <code>0 8 * * 1-5 cd /path/to/budgetcraft-local &amp;&amp; python kite_auto_login.py</code><br>
+      <span style="opacity:.7">(Runs Mon–Fri at 8 AM — after markets open, before your sync)</span>
+    </div>
+
+    <div class="modal-actions" style="margin-top:1rem">
+      <button class="btn-m-cancel" onclick="closeModal('settingsModal')">Close</button>
+      <button class="btn-m-save" onclick="saveCredentials()">💾 Save API Credentials</button>
+      <button class="btn-m-cancel" style="color:var(--red);border-color:var(--red)" onclick="disconnectKite()">🔌 Disconnect</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════════════════════
+function fmt(n){const v=isNaN(n)?0:Math.abs(n);return '₹'+v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtCr(n){const v=isNaN(parseFloat(n))?0:parseFloat(n);const a=Math.abs(v);return a>=10000000?'₹'+(a/10000000).toFixed(2)+'Cr':a>=100000?'₹'+(a/100000).toFixed(2)+'L':fmt(v);}
+function fmtS(n){const v=isNaN(parseFloat(n))?0:parseFloat(n);return (v<0?'−':'')+fmtCr(v);}
+function fmtPct(n){const v=isNaN(parseFloat(n))?0:parseFloat(n);return (v>=0?'+':'')+v.toFixed(2)+'%';}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,dur=2600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function startLoad(){const b=document.getElementById('lbar');b.className='lbar on';}
+function doneLoad(){const b=document.getElementById('lbar');b.className='lbar done';setTimeout(()=>b.className='lbar',400);}
+async function api(url,opts={}){
+  startLoad();
+  const r=await fetch(url,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...opts});
+  doneLoad();
+  if(!r.ok){
+    if(r.status===401){window.location='/login';throw new Error('Not logged in');}
+    const e=await r.json().catch(()=>({error:'HTTP '+r.status}));
+    toast('❌ '+(e.error||'Error'));
+    throw new Error(e.error||'Error');
+  }
+  return r.json();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════════
+let holdings   = [];
+let mfHoldings = [];
+let sortField  = 'value';
+let sortAsc    = false;
+const charts   = {};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════════════════════════════════
+function switchTab(name, btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='analysis') renderAnalysisCharts();
+  if(name==='pnl')      renderPnlCharts();
+  if(name==='trend')    renderTrendCharts();
+  if(name==='mf')       renderMFTable();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INIT — load last snapshot
+// ══════════════════════════════════════════════════════════════════════════════
+async function init(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('connected')==='1') toast('✅ Kite connected! Now click Sync Holdings.');
+  if(params.get('error')) toast('❌ Kite auth error: '+params.get('error'));
+  window.history.replaceState({}, '', '/investments');
+
+  await loadConfig();
+  try {
+    await loadHoldings();
+  } catch(e) {
+    console.error('init loadHoldings error:', e);
+    // Don't block page load — just show empty state
+  }
+}
+
+async function loadConfig(){
+  const cfg = await api('/api/kite/config');
+  const badge = document.getElementById('statusBadge');
+  const banner = document.getElementById('connBanner');
+  if(cfg.has_token){
+    badge.innerHTML = '<span class="status-pill pill-connected">● Connected to Kite</span>';
+    banner.innerHTML = '';
+  }else if(cfg.api_key){
+    badge.innerHTML = '<span class="status-pill pill-disconnected">⚠ API key saved — login required</span>';
+    banner.innerHTML = '<span class="status-pill pill-disconnected" style="margin-top:.5rem">Token expired or missing. Run <strong>kite_auto_login.py</strong> then click Sync Holdings.</span>';
+  }else{
+    badge.innerHTML = '<span class="status-pill pill-disconnected">Not connected</span>';
+    banner.innerHTML = '';
+  }
+}
+
+async function loadHoldings(){
+  // No try/catch here — let errors propagate to the caller (syncHoldings or init)
+  const data = await api('/api/kite/holdings');
+  holdings   = data.holdings || [];
+  mfHoldings = data.mf || [];
+
+  updateHeroKPIs(data);
+
+  const si = document.getElementById('syncInfo');
+  if (si) si.textContent = data.fetched_at
+    ? `Last synced: ${data.fetched_at.slice(0,16).replace('T',' ')}`
+    : '';
+
+  if (holdings.length) {
+    renderHoldingsTable();
+  } else {
+    renderNoData();
+  }
+}
+
+function renderNoData(){
+  document.getElementById('holdingsTbody').innerHTML = `
+    <tr><td colspan="11" style="text-align:center;padding:3rem;color:#bbb">
+      <div style="font-size:2rem;margin-bottom:.5rem">📭</div>
+      No holdings data yet. Click <strong>Sync Holdings</strong> to fetch from Kite.
+    </td></tr>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HERO KPIs
+// ══════════════════════════════════════════════════════════════════════════════
+function setEl(id, val, prop='textContent') {
+  const el = document.getElementById(id);
+  if (el) el[prop] = val;
+}
+
+function safeNum(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+function safeInt(v){ const n=parseInt(v); return isNaN(n)?0:n; }
+
+function updateHeroKPIs(data){
+  const h  = data.holdings || [];
+  const mf = data.mf || [];
+  let eqValue=0, eqInvested=0, eqPnl=0, dayChangeAmt=0;
+  let winners=0, losers=0, pledgedCount=0;
+
+  h.forEach(s=>{
+    // Use backend-computed fields first, fall back to calculating from raw
+    const totalQty = safeInt(s.total_quantity) || safeInt(s.quantity);
+    const ltp      = safeNum(s.last_price);
+    const avg      = safeNum(s.average_price);
+    const pnl      = safeNum(s.total_pnl) || (ltp - avg) * totalQty;
+    const day      = safeNum(s.day_change) * totalQty;
+    const cv       = safeNum(s.current_value)  || ltp * totalQty;
+    const iv       = safeNum(s.invested_value) || avg * totalQty;
+    eqValue      += cv;
+    eqInvested   += iv;
+    eqPnl        += pnl;
+    dayChangeAmt += day;
+    if (pnl >= 0) winners++; else losers++;
+    if (safeInt(s.pledged_quantity) > 0) pledgedCount++;
+  });
+
+  let mfValue=0, mfInvested=0, mfPnl=0;
+  mf.forEach(m=>{
+    mfValue    += safeNum(m.current_value);
+    mfInvested += safeNum(m.invested_value);
+    mfPnl      += safeNum(m.total_pnl);
+  });
+
+  const totalValue    = eqValue    + mfValue;
+  const totalInvested = eqInvested + mfInvested;
+  const totalPnl      = eqPnl      + mfPnl;
+  const pnlPct = totalInvested > 0 ? (totalPnl / totalInvested * 100) : 0;
+  const dayPct = (eqValue - dayChangeAmt) > 0 ? (dayChangeAmt / (eqValue - dayChangeAmt) * 100) : 0;
+
+  setEl('hkpi-value',        fmtCr(totalValue));
+  setEl('hkpi-eq-value',     fmtCr(eqValue));
+  setEl('hkpi-eq-sub',       pledgedCount > 0 ? `${pledgedCount} pledged` : 'No pledged stocks');
+  setEl('hkpi-mf-value',     fmtCr(mfValue));
+  setEl('hkpi-mf-sub',       `${mf.length} fund${mf.length !== 1 ? 's' : ''}`);
+  setEl('hkpi-pnl-pct',      fmtPct(pnlPct) + ' overall');
+  setEl('hkpi-day-pct',      fmtPct(dayPct) + ' today');
+  setEl('hkpi-count',        h.length);
+  setEl('hkpi-pledged-sub',  `${pledgedCount} pledged`);
+  setEl('hkpi-wl', `<span style="color:#6fcf97">${winners}</span> / <span style="color:#eb5757">${losers}</span>`, 'innerHTML');
+
+  const pnlEl = document.getElementById('hkpi-pnl');
+  if (pnlEl) { pnlEl.textContent = fmtS(totalPnl); pnlEl.className = 'hkpi-val '+(totalPnl>=0?'pos':'neg'); }
+  const dayEl = document.getElementById('hkpi-day');
+  if (dayEl) { dayEl.textContent = fmtS(dayChangeAmt); dayEl.className = 'hkpi-val '+(dayChangeAmt>=0?'pos':'neg'); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HOLDINGS TABLE
+// ══════════════════════════════════════════════════════════════════════════════
+function getComputedHoldings(){
+  return holdings.map(s=>{
+    const qty     = safeInt(s.total_quantity) || safeInt(s.quantity);
+    const freeQty = safeInt(s.free_quantity)  || safeInt(s.quantity);
+    const plgdQty = safeInt(s.pledged_quantity);
+    const t1Qty   = safeInt(s.t1_quantity);
+    const ltp     = safeNum(s.last_price);
+    const avg     = safeNum(s.average_price);
+    const day     = safeNum(s.day_change);
+    const dayP    = safeNum(s.day_change_percentage);
+    const invested = avg * qty;
+    const value    = ltp * qty;
+    // Use backend-computed pnl if available (correct for pledged), else derive
+    const pnl      = safeNum(s.total_pnl) || ((ltp - avg) * qty);
+    const pnlPct   = invested > 0 ? (pnl / invested * 100) : 0;
+    return {...s, qty, freeQty, plgdQty, t1Qty, ltp, avg, pnl, pnlPct, day, dayP, invested, value};
+  });
+}
+
+function sortBy(field, btn){
+  if(sortField===field) sortAsc=!sortAsc;
+  else { sortField=field; sortAsc=field==='sym'; }
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderHoldingsTable();
+}
+
+function filterTable(){
+  renderHoldingsTable();
+}
+
+function renderHoldingsTable(){
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  let data = getComputedHoldings().filter(s=>
+    !q || s.tradingsymbol.toLowerCase().includes(q)
+  );
+  const fieldMap = {value:'value',pnl:'pnl',pnl_pct:'pnlPct',day:'dayP',sym:'tradingsymbol'};
+  const f = fieldMap[sortField]||'value';
+  data.sort((a,b)=>sortAsc?(a[f]>b[f]?1:-1):(a[f]<b[f]?1:-1));
+  document.getElementById('filterTag').textContent = q ? `${data.length} of ${holdings.length} shown` : `${holdings.length} holdings`;
+
+  // Max abs values for bar widths
+  const maxPnl   = Math.max(...data.map(s=>Math.abs(s.pnl)),1);
+
+  const tbody = document.getElementById('holdingsTbody');
+  tbody.innerHTML = data.map(s=>{
+    const pnlCls = s.pnl>=0?'pnl-pos':'pnl-neg';
+    const dayCls = s.dayP>=0?'chg-pos':'chg-neg';
+    const barPct = Math.min(100,Math.abs(s.pnl)/maxPnl*100);
+    const barCls = s.pnl>=0?'col-fill-pos':'col-fill-neg';
+    const t1Tag = s.t1Qty>0 ? '<span style="font-size:.7rem;color:#888;margin-left:2px">+'+s.t1Qty+'T1</span>' : '';
+    const plgTag = s.plgdQty>0 ? '<span style="font-size:.7rem;color:#7b2d8b;font-weight:600;margin-left:3px">+'+s.plgdQty+'🔒</span>' : '';
+    const qtyDetail = s.plgdQty>0
+      ? (s.freeQty + plgTag + t1Tag)
+      : (s.qty + t1Tag);
+    return `<tr${s.plgdQty>0?' style="background:#fdf8ff"':''}>
+      <td><span class="sym-badge">${s.tradingsymbol}</span>${s.plgdQty>0?'<span style="font-size:.65rem;background:#ead6f0;color:#7b2d8b;padding:1px 5px;border-radius:4px;margin-left:4px">🔒 Pledged</span>':''}</td>
+      <td><span class="exch-tag">${s.exchange}</span></td>
+      <td>${qtyDetail}</td>
+      <td>${fmt(s.avg)}</td>
+      <td><strong>${fmt(s.ltp)}</strong></td>
+      <td>${fmtCr(s.invested)}</td>
+      <td><strong>${fmtCr(s.value)}</strong></td>
+      <td class="${pnlCls}">${fmtS(s.pnl)}<span class="col-bar"><span class="${barCls}" style="width:${barPct}%"></span></span></td>
+      <td class="${pnlCls}">${fmtPct(s.pnlPct)}</td>
+      <td class="${dayCls}">${s.day>=0?'+':''}${s.day.toFixed(2)}</td>
+      <td class="${dayCls}">${fmtPct(s.dayP)}</td>
+    </tr>`;
+  }).join('');
+
+  // Footer totals
+  const tot = data.reduce((acc,s)=>({
+    invested: acc.invested+s.invested,
+    value:    acc.value+s.value,
+    pnl:      acc.pnl+s.pnl,
+    dayAmt:   acc.dayAmt+s.day*s.qty,
+    pledged:  acc.pledged+(s.plgdQty||0)
+  }),{invested:0,value:0,pnl:0,dayAmt:0,pledged:0});
+  const totPnlPct = tot.invested>0?(tot.pnl/tot.invested*100):0;
+  const totDayPct = (tot.value-tot.dayAmt)>0?(tot.dayAmt/(tot.value-tot.dayAmt)*100):0;
+  const tPnlCls = tot.pnl>=0?'pnl-pos':'pnl-neg';
+  const tDayCls = tot.dayAmt>=0?'chg-pos':'chg-neg';
+  document.getElementById('holdingsTfoot').innerHTML = `<tr class="total-row">
+    <td colspan="5">TOTAL (${data.length} stocks)</td>
+    <td>${fmtCr(tot.invested)}</td>
+    <td><strong>${fmtCr(tot.value)}</strong></td>
+    <td class="${tPnlCls}">${fmtS(tot.pnl)}</td>
+    <td class="${tPnlCls}">${fmtPct(totPnlPct)}</td>
+    <td class="${tDayCls}">${fmtS(tot.dayAmt)}</td>
+    <td class="${tDayCls}">${fmtPct(totDayPct)}</td>
+  </tr>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ANALYSIS CHARTS
+// ══════════════════════════════════════════════════════════════════════════════
+const COLORS=['#2d6a4f','#1d3557','#7b2d8b','#9c2323','#b5591a','#0d47a1','#4a0e0e',
+              '#1b5e20','#0d3c5e','#4a148c','#b71c1c','#e65100','#01579b','#880e4f',
+              '#33691e','#006064','#4527a0','#c62828','#f57f17','#1565c0'];
+
+function destroyChart(key){if(charts[key]){try{charts[key].destroy();}catch(e){} charts[key]=null;}}
+
+function renderAnalysisCharts(){
+  if(!holdings.length) return;
+  const data = getComputedHoldings();
+
+  // Exchange donut
+  const exchMap={};
+  data.forEach(s=>{exchMap[s.exchange]=(exchMap[s.exchange]||0)+s.value;});
+  const exchLabels=Object.keys(exchMap), exchVals=Object.values(exchMap);
+  const totalV=exchVals.reduce((a,b)=>a+b,0);
+  destroyChart('exch');
+  charts['exch']=new Chart(document.getElementById('chartExch').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:exchLabels,datasets:[{data:exchVals,backgroundColor:COLORS.slice(0,exchLabels.length),borderWidth:3,borderColor:'#fff',hoverOffset:6}]},
+    options:{cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtCr(c.raw)} (${(c.raw/totalV*100).toFixed(1)}%)`}}}}
+  });
+  document.getElementById('exchLegend').innerHTML = exchLabels.map((l,i)=>`
+    <div class="legend-row">
+      <div class="legend-dot" style="background:${COLORS[i]}"></div>
+      <span class="legend-name">${l}</span>
+      <span class="legend-pct">${(exchVals[i]/totalV*100).toFixed(1)}%</span>
+      <span class="legend-val">${fmtCr(exchVals[i])}</span>
+    </div>`).join('');
+
+  // Top 10 by value
+  const top10=[...data].sort((a,b)=>b.value-a.value).slice(0,10);
+  destroyChart('top10');
+  charts['top10']=new Chart(document.getElementById('chartTop10').getContext('2d'),{
+    type:'bar',
+    data:{labels:top10.map(s=>s.tradingsymbol),datasets:[{
+      label:'Portfolio %',data:top10.map(s=>+(s.value/totalV*100).toFixed(2)),
+      backgroundColor:top10.map((_,i)=>COLORS[i%COLORS.length]+'dd'),
+      borderRadius:5,borderWidth:0
+    }]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>`${c.raw}% — ${fmtCr(top10[c.dataIndex].value)}`}}},
+      scales:{x:{ticks:{callback:v=>v+'%'},grid:{color:'#f0ebe0'}},y:{grid:{display:false}}}}
+  });
+
+  // P&L distribution (winners vs losers bucket)
+  const gainers=data.filter(s=>s.pnl>0), losers=data.filter(s=>s.pnl<=0);
+  const gTotal=gainers.reduce((s,x)=>s+x.pnl,0), lTotal=losers.reduce((s,x)=>s+Math.abs(x.pnl),0);
+  destroyChart('pnlDist');
+  charts['pnlDist']=new Chart(document.getElementById('chartPnlDist').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:[`Winners (${gainers.length})`,`Losers (${losers.length})`],
+      datasets:[{data:[gTotal,lTotal],backgroundColor:['rgba(45,106,79,.8)','rgba(156,35,35,.8)'],borderWidth:3,borderColor:'#fff',hoverOffset:6}]},
+    options:{cutout:'60%',plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtCr(c.raw)}`}}}}
+  });
+
+  // Concentration bar
+  const sorted=[...data].sort((a,b)=>b.value-a.value);
+  let running=0;
+  const concLabels=[], concVals=[];
+  sorted.forEach((s,i)=>{running+=s.value/totalV*100;concLabels.push(s.tradingsymbol);concVals.push(+running.toFixed(1));});
+  destroyChart('conc');
+  charts['conc']=new Chart(document.getElementById('chartConc').getContext('2d'),{
+    type:'line',
+    data:{labels:concLabels,datasets:[{
+      label:'Cumulative %',data:concVals,borderColor:'#7b2d8b',
+      backgroundColor:'rgba(123,45,139,.10)',fill:true,tension:.3,
+      pointRadius:concLabels.length<=20?4:0,borderWidth:2
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>`${c.raw}% of portfolio after top ${c.dataIndex+1}`}}},
+      scales:{y:{ticks:{callback:v=>v+'%'},max:100,grid:{color:'#f0ebe0'}},x:{grid:{display:false},ticks:{maxTicksLimit:10}}}}
+  });
+
+  // All holdings allocation bar
+  const allSorted=[...data].sort((a,b)=>b.value-a.value);
+  destroyChart('alloc');
+  charts['alloc']=new Chart(document.getElementById('chartAlloc').getContext('2d'),{
+    type:'bar',
+    data:{labels:allSorted.map(s=>s.tradingsymbol),datasets:[{
+      label:'Value',data:allSorted.map(s=>s.value),
+      backgroundColor:allSorted.map(s=>s.pnl>=0?'rgba(45,106,79,.7)':'rgba(156,35,35,.7)'),
+      borderRadius:4,borderWidth:0
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>`${fmtCr(c.raw)}`}}},
+      scales:{y:{ticks:{callback:v=>fmtCr(v)},grid:{color:'#f0ebe0'}},
+              x:{grid:{display:false},ticks:{maxRotation:45,maxTicksLimit:30}}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// P&L CHARTS
+// ══════════════════════════════════════════════════════════════════════════════
+function renderPnlCharts(){
+  if(!holdings.length) return;
+  const data=getComputedHoldings();
+  const sorted=[...data].sort((a,b)=>b.pnl-a.pnl);
+  const gainers=[...sorted].filter(s=>s.pnl>0).slice(0,8);
+  const losers =[...sorted].filter(s=>s.pnl<0).sort((a,b)=>a.pnl-b.pnl).slice(0,8);
+
+  const maxG=gainers.length?Math.max(...gainers.map(s=>s.pnl)):1;
+  const maxL=losers.length ?Math.max(...losers.map(s=>Math.abs(s.pnl))):1;
+
+  function pnlRowHtml(s,maxAbs,isGain){
+    const pct=Math.min(100,Math.abs(s.pnl)/maxAbs*100);
+    const color=isGain?'var(--green)':'var(--red)';
+    return `<div class="pnl-row">
+      <span class="pnl-sym">${s.tradingsymbol}</span>
+      <div class="pnl-bar-wrap"><div class="pnl-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="${isGain?'pnl-pos':'pnl-neg'}" style="min-width:90px;text-align:right">${fmtS(s.pnl)}<br><span style="font-size:.7rem;font-weight:400">${fmtPct(s.pnlPct)}</span></span>
+    </div>`;
+  }
+  document.getElementById('gainerSub').textContent=gainers.length+' profitable';
+  document.getElementById('loserSub').textContent=losers.length+' in loss';
+  document.getElementById('gainers').innerHTML=gainers.length?gainers.map(s=>pnlRowHtml(s,maxG,true)).join(''):'<div style="color:#bbb;font-size:.85rem;padding:1rem">No profitable holdings</div>';
+  document.getElementById('losers').innerHTML=losers.length?losers.map(s=>pnlRowHtml(s,maxL,false)).join(''):'<div style="color:#bbb;font-size:.85rem;padding:1rem">No loss-making holdings — great!</div>';
+
+  // Full P&L bar chart
+  const allSorted=[...data].sort((a,b)=>b.pnl-a.pnl);
+  destroyChart('fullpnl');
+  charts['fullpnl']=new Chart(document.getElementById('chartFullPnl').getContext('2d'),{
+    type:'bar',
+    data:{labels:allSorted.map(s=>s.tradingsymbol),datasets:[{
+      label:'P&L',data:allSorted.map(s=>s.pnl),
+      backgroundColor:allSorted.map(s=>s.pnl>=0?'rgba(45,106,79,.75)':'rgba(156,35,35,.75)'),
+      borderRadius:3,borderWidth:0
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>`${fmtS(c.raw)} (${fmtPct(allSorted[c.dataIndex].pnlPct)})`}}},
+      scales:{y:{ticks:{callback:v=>fmtCr(v)},grid:{color:'#f0ebe0'}},
+              x:{grid:{display:false},ticks:{maxRotation:45,maxTicksLimit:30}}}}
+  });
+
+  // Day change bar chart
+  const daySorted=[...data].sort((a,b)=>b.dayP-a.dayP);
+  destroyChart('daychange');
+  charts['daychange']=new Chart(document.getElementById('chartDayChange').getContext('2d'),{
+    type:'bar',
+    data:{labels:daySorted.map(s=>s.tradingsymbol),datasets:[{
+      label:'Day %',data:daySorted.map(s=>s.dayP),
+      backgroundColor:daySorted.map(s=>s.dayP>=0?'rgba(45,106,79,.75)':'rgba(156,35,35,.75)'),
+      borderRadius:3,borderWidth:0
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>`${fmtPct(c.raw)}`}}},
+      scales:{y:{ticks:{callback:v=>v+'%'},grid:{color:'#f0ebe0'}},
+              x:{grid:{display:false},ticks:{maxRotation:45,maxTicksLimit:30}}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TREND CHARTS
+// ══════════════════════════════════════════════════════════════════════════════
+async function renderTrendCharts(){
+  const rawSnaps = await api('/api/kite/snapshots');
+  // Deduplicate: keep only the LAST snapshot per calendar date
+  const byDate = {};
+  rawSnaps.forEach(s => { byDate[s.snapshot_date] = s; });
+  const snaps = Object.keys(byDate).sort().map(d => byDate[d]);
+  document.getElementById('trendCount').textContent = snaps.length+' day'+(snaps.length!==1?'s':'')+' of data';
+  if(snaps.length<2){
+    ['chartTrend','chartPnlTrend'].forEach(id=>{
+      const ctx=document.getElementById(id);
+      if(ctx) ctx.closest('.card').querySelector('.card-title').nextElementSibling?.remove();
+      const div=document.createElement('div');div.className='empty-state';
+      div.innerHTML='<div class="empty-icon">📈</div><div class="empty-text">Sync at least 2 times on different days<br>to see portfolio trend over time.</div>';
+      if(ctx) ctx.replaceWith(div);
+    });
+    return;
+  }
+  const labels  = snaps.map(s=>s.snapshot_date);
+  const values  = snaps.map(s=>s.total_value);
+  const pnls    = snaps.map(s=>s.total_pnl);
+
+  destroyChart('trend');
+  charts['trend']=new Chart(document.getElementById('chartTrend').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[{
+      label:'Portfolio Value',data:values,borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,.10)',
+      borderWidth:2.5,pointRadius:4,tension:.3,fill:true
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>fmtCr(c.raw)}}},
+      scales:{y:{ticks:{callback:v=>fmtCr(v)},grid:{color:'#f0ebe0'}},x:{grid:{display:false}}}}
+  });
+
+  destroyChart('pnltrend');
+  charts['pnltrend']=new Chart(document.getElementById('chartPnlTrend').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[{
+      label:'Total P&L',data:pnls,borderColor:'#7b2d8b',backgroundColor:'rgba(123,45,139,.08)',
+      borderWidth:2.5,pointBackgroundColor:pnls.map(v=>v>=0?'#2d6a4f':'#9c2323'),pointRadius:4,tension:.3,fill:true
+    }]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>fmtS(c.raw)}}},
+      scales:{y:{ticks:{callback:v=>fmtCr(v)},grid:{color:'#f0ebe0'}},x:{grid:{display:false}}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SYNC
+// ══════════════════════════════════════════════════════════════════════════════
+async function runAutoLogin(){
+  // Check credentials are saved first
+  const cfg = await api('/api/kite/config').catch(()=>null);
+  if(!cfg){ return; }
+
+  // Clear modal state
+  document.getElementById('alSteps').textContent='';
+  document.getElementById('alError').style.display='none';
+  document.getElementById('alSuccess').style.display='none';
+  document.getElementById('alSyncBtn').style.display='none';
+  document.getElementById('alStatus').textContent='Connecting to Zerodha…';
+  document.getElementById('autoLoginModal').classList.add('open');
+
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.textContent='🔐 Logging in…';
+
+  try{
+    const r = await fetch('/api/kite/auto-login',{
+      method:'POST',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({})
+    });
+    const data = await r.json();
+
+    if(data.steps){
+      document.getElementById('alSteps').innerHTML =
+        data.steps.map(s=>`<div style="color:#2d6a4f">${s}</div>`).join('');
+    }
+
+    if(!r.ok || !data.ok){
+      document.getElementById('alStatus').textContent='Login failed';
+      const errEl=document.getElementById('alError');
+      errEl.style.display='block';
+      errEl.textContent='❌ '+(data.error||'Unknown error');
+      // If credentials not configured, open settings
+      if(data.error && data.error.includes('Missing credentials')){
+        setTimeout(()=>{closeModal('autoLoginModal');openSettings();},1200);
+      }
+    } else {
+      document.getElementById('alStatus').textContent='✅ Login successful!';
+      const sEl=document.getElementById('alSuccess');
+      sEl.style.display='block';
+      sEl.textContent=`✅ Access token saved (${data.token_preview}). Ready to sync holdings.`;
+      document.getElementById('alSyncBtn').style.display='';
+      await loadConfig(); // refresh connection badge
+    }
+  }catch(e){
+    document.getElementById('alStatus').textContent='Error';
+    const errEl=document.getElementById('alError');
+    errEl.style.display='block';
+    errEl.textContent='❌ '+(e.message||'Network error');
+  }finally{
+    btn.disabled=false; btn.textContent='🔐 Get Token';
+  }
+}
+
+async function syncHoldings(){
+  const btn=document.getElementById('syncBtn');
+  btn.disabled=true; btn.textContent='⟳ Syncing…';
+  try{
+    startLoad();
+    const r = await fetch('/api/kite/fetch',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({})
+    });
+    doneLoad();
+    const res = await r.json();
+    if(!r.ok){
+      // Show the actual error from Kite API
+      const msg = res.error || 'Sync failed';
+      showSyncError(msg);
+      return;
+    }
+    // Clear any previous error
+    hideSyncError();
+    toast(`✅ Synced ${res.holdings} stocks (${res.pledged||0} pledged) + ${res.mf||0} MFs · Total: ${fmtCr(res.total_value)}`);
+    await loadHoldings();
+  }catch(e){
+    doneLoad();
+    console.error('syncHoldings full error:', e, e?.stack);
+    const msg = e?.message || String(e) || 'Unknown JS error';
+    showSyncError(`JS Error: ${msg} — open browser console (F12) for full stack trace.`);
+  }finally{
+    btn.disabled=false; btn.textContent='⟳ Sync Holdings';
+  }
+}
+
+function showSyncError(msg){
+  let el = document.getElementById('syncErrorBanner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'syncErrorBanner';
+    el.style.cssText = 'background:#fff2f2;border:1.5px solid #fbc8c8;color:#c0392b;border-radius:10px;padding:12px 16px;font-size:.85rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:10px;line-height:1.5;animation:slideUp .2s ease';
+    document.querySelector('main').prepend(el);
+  }
+  el.style.display='flex';
+  el.innerHTML = `<span style="font-size:1.1rem;flex-shrink:0">❌</span><div><strong>Sync failed:</strong> ${msg}</div>`;
+}
+function hideSyncError(){
+  const el=document.getElementById('syncErrorBanner');
+  if(el) el.style.display='none';
+}
+
+async function clearSnapshots(){
+  if(!confirm('Clear all snapshot history? This cannot be undone.')) return;
+  await api('/api/kite/snapshots',{method:'DELETE',body:JSON.stringify({})});
+  toast('🗑️ Snapshot history cleared');
+  renderTrendCharts();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SETTINGS MODAL — TOTP AUTO-LOGIN
+// ══════════════════════════════════════════════════════════════════════════════
+let _cfg = {};
+
+function buildScript(k, s, uid, pwd, totp){
+  return `#!/usr/bin/env python3
+"""
+BudgetCraft — Kite Auto-Login Script
+Run once each morning before syncing holdings.
+Usage : python kite_auto_login.py
+Needs : pip install requests pyotp
+"""
+import sqlite3, hashlib, pyotp, requests, sys, os
+
+# ── CONFIGURATION ──────────────────────────────────────────────────────────
+API_KEY      = "${k}"
+API_SECRET   = "${s}"
+ZERODHA_ID   = "${uid}"
+ZERODHA_PASS = "${pwd}"
+TOTP_SECRET  = "${totp}"   # 32-char base32 key from Zerodha 2FA setup page
+DB_PATH      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "budget.db")
+# ──────────────────────────────────────────────────────────────────────────
+
+def get_access_token():
+    sess = requests.Session()
+    sess.headers.update({"X-Kite-Version": "3", "User-Agent": "Mozilla/5.0"})
+
+    # Step 1 — Password login
+    r = sess.post("https://kite.zerodha.com/api/login",
+                  data={"user_id": ZERODHA_ID, "password": ZERODHA_PASS})
+    r.raise_for_status()
+    d = r.json()
+    if d.get("status") != "success":
+        raise Exception(f"Login failed: {d.get('message')}")
+    req_id = d["data"]["request_id"]
+    print(f"  Step 1 ✓  Password accepted")
+
+    # Step 2 — TOTP 2FA
+    totp_val = pyotp.TOTP(TOTP_SECRET).now()
+    r = sess.post("https://kite.zerodha.com/api/twofa",
+                  data={"user_id": ZERODHA_ID, "request_id": req_id,
+                        "twofa_value": totp_val, "skip_session": ""})
+    r.raise_for_status()
+    d = r.json()
+    if d.get("status") != "success":
+        raise Exception(f"2FA failed: {d.get('message')}")
+    print(f"  Step 2 ✓  TOTP accepted")
+
+    # Step 3 — Grab request_token from redirect Location header
+    r = sess.get(
+        f"https://kite.zerodha.com/connect/login?api_key={API_KEY}&v=3",
+        allow_redirects=False
+    )
+    location = r.headers.get("Location", "")
+    req_token = None
+    for part in location.split("&"):
+        if "request_token=" in part:
+            req_token = part.split("request_token=")[-1].split("&")[0]
+            break
+    if not req_token:
+        # Fallback: follow redirect and parse final URL
+        from urllib.parse import urlparse, parse_qs
+        r2 = sess.get(f"https://kite.zerodha.com/connect/login?api_key={API_KEY}&v=3")
+        params = parse_qs(urlparse(r2.url).query)
+        req_token = (params.get("request_token") or [""])[0]
+    if not req_token:
+        raise Exception("Could not find request_token in redirect URL")
+    print(f"  Step 3 ✓  request_token obtained")
+
+    # Step 4 — Exchange for access_token
+    checksum = hashlib.sha256(
+        f"{API_KEY}{req_token}{API_SECRET}".encode()
+    ).hexdigest()
+    r = sess.post("https://api.kite.trade/session/token",
+                  data={"api_key": API_KEY,
+                        "request_token": req_token,
+                        "checksum": checksum})
+    r.raise_for_status()
+    d = r.json()
+    if d.get("status") != "success":
+        raise Exception(f"Token exchange failed: {d.get('message')}")
+    print(f"  Step 4 ✓  access_token received")
+    return d["data"]["access_token"]
+
+def save_token_to_db(token):
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""CREATE TABLE IF NOT EXISTS kite_config
+                    (key TEXT PRIMARY KEY, value TEXT NOT NULL)""")
+    conn.execute("INSERT OR REPLACE INTO kite_config (key,value) VALUES ('access_token',?)",
+                 (token,))
+    conn.commit()
+    conn.close()
+
+if __name__ == "__main__":
+    print("\n🔐 BudgetCraft — Kite Auto-Login")
+    print("─" * 36)
+    try:
+        token = get_access_token()
+        save_token_to_db(token)
+        print(f"\n✅ Done!  Token saved: {token[:10]}…")
+        print("   Open the Investment Tracker and click Sync Holdings.\n")
+    except Exception as e:
+        print(f"\n❌ Error: {e}\n")
+        sys.exit(1)
+`;
+}
+
+function rebuildScript(){
+  const k    = (document.getElementById('cfgApiKey').value||'').trim()    || 'YOUR_API_KEY';
+  const s    = (document.getElementById('cfgApiSecret').value||'').trim() || 'YOUR_API_SECRET';
+  const uid  = (document.getElementById('cfgUserId').value||'').trim()    || 'YOUR_ZERODHA_ID';
+  const pwd  = (document.getElementById('cfgPassword').value||'').trim()  || 'YOUR_PASSWORD';
+  const totp = (document.getElementById('cfgTotpSecret').value||'').trim()|| 'YOUR_TOTP_SECRET';
+  document.getElementById('totpScript').textContent = buildScript(k,s,uid,pwd,totp);
+}
+
+async function openSettings(){
+  _cfg = await api('/api/kite/config');
+  document.getElementById('cfgApiKey').value      = _cfg.api_key || '';
+  document.getElementById('cfgApiSecret').value   = '';
+  document.getElementById('cfgUserId').value      = '';
+  document.getElementById('cfgPassword').value    = '';
+  document.getElementById('cfgTotpSecret').value  = '';
+  document.getElementById('settingsError').innerHTML = '';
+  const line = document.getElementById('cfgStatusLine');
+  if(_cfg.has_token)
+    line.innerHTML = '<span style="color:#2d6a4f;font-weight:600">● Connected</span> — token active. Re-run the script each morning as tokens expire at ~6 AM.';
+  else if(_cfg.api_key)
+    line.innerHTML = '<span style="color:#856404;font-weight:600">⚠ Credentials saved</span> — run <code>kite_auto_login.py</code> to get a fresh token.';
+  else
+    line.textContent = 'Fill in all fields below to generate the auto-login script.';
+  rebuildScript();
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+async function saveCredentials(){
+  const k    = document.getElementById('cfgApiKey').value.trim();
+  const s    = document.getElementById('cfgApiSecret').value.trim();
+  const uid  = document.getElementById('cfgUserId').value.trim();
+  const pwd  = document.getElementById('cfgPassword').value;
+  const totp = document.getElementById('cfgTotpSecret').value.trim();
+  if(!k) return alert('API Key is required');
+  const d = {api_key: k};
+  if(s)    d.api_secret  = s;
+  if(uid)  d.user_id     = uid;
+  if(pwd)  d.password    = pwd;
+  if(totp) d.totp_secret = totp;
+  await api('/api/kite/config',{method:'POST',body:JSON.stringify(d)});
+  toast('✅ Credentials saved — click 🔐 Get Token to login');
+}
+
+function copyScript(){
+  const text = document.getElementById('totpScript').textContent;
+  if(!text.trim()){ rebuildScript(); }
+  navigator.clipboard.writeText(document.getElementById('totpScript').textContent)
+    .then(()=>toast('✅ Script copied to clipboard!'));
+}
+
+function saveAndDownloadScript(){
+  const text = document.getElementById('totpScript').textContent;
+  if(!text.trim()){ rebuildScript(); return; }
+  const blob = new Blob([document.getElementById('totpScript').textContent], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kite_auto_login.py';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('✅ Script downloaded as kite_auto_login.py');
+}
+
+async function disconnectKite(){
+  if(!confirm('Remove the stored access token?')) return;
+  await api('/api/kite/disconnect',{method:'POST',body:JSON.stringify({})});
+  toast('🔌 Disconnected');
+  closeModal('settingsModal');
+  loadConfig();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MUTUAL FUNDS TABLE
+// ══════════════════════════════════════════════════════════════════════════════
+function renderMFTable(){
+  if(!mfHoldings.length){
+    document.getElementById('mfTbody').innerHTML=`<tr><td colspan="8" style="text-align:center;padding:3rem;color:#bbb"><div style="font-size:2rem;margin-bottom:.5rem">📂</div>No mutual fund holdings found. Sync to fetch from Kite Coin.</td></tr>`;
+    document.getElementById('mfSummaryStrip').innerHTML='';return;
+  }
+  const totalV=mfHoldings.reduce((s,m)=>s+parseFloat(m.current_value||0),0);
+  const totalI=mfHoldings.reduce((s,m)=>s+parseFloat(m.invested_value||0),0);
+  const totalP=mfHoldings.reduce((s,m)=>s+parseFloat(m.total_pnl||0),0);
+  const pnlPct=totalI>0?(totalP/totalI*100):0;
+  document.getElementById('mfSummaryStrip').innerHTML=`
+    <span style="background:#d8f3dc;color:#1e6640;padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:600">Total: ${fmtCr(totalV)}</span>
+    <span style="background:#d6e4f0;color:#1d3557;padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:600">Invested: ${fmtCr(totalI)}</span>
+    <span style="background:${totalP>=0?'#d8f3dc':'#f5d6d6'};color:${totalP>=0?'#1e6640':'#9c2323'};padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:600">P&L: ${fmtS(totalP)} (${fmtPct(pnlPct)})</span>
+    <span style="background:#ede7d9;color:#666;padding:5px 14px;border-radius:20px;font-size:.8rem">${mfHoldings.length} fund${mfHoldings.length!==1?'s':''}</span>`;
+  const sorted=[...mfHoldings].sort((a,b)=>parseFloat(b.current_value||0)-parseFloat(a.current_value||0));
+  document.getElementById('mfTbody').innerHTML=sorted.map(m=>{
+    const cv=parseFloat(m.current_value||0),iv=parseFloat(m.invested_value||0);
+    const pnl=parseFloat(m.total_pnl||0),pct=parseFloat(m.pnl_pct||0);
+    const qty=parseFloat(m.total_quantity||m.quantity||0);
+    const nav=parseFloat(m.last_price||0),avg=parseFloat(m.average_price||0);
+    const pnlCls=pnl>=0?'pnl-pos':'pnl-neg';
+    const name=m.fund||m.tradingsymbol||'Unknown Fund';
+    return `<tr>
+      <td style="font-weight:600;max-width:300px;white-space:normal;line-height:1.3">${escH(name)}${m.folio?`<div style="font-size:.72rem;color:#aaa">Folio: ${m.folio}</div>`:''}</td>
+      <td>${qty.toFixed(3)}</td><td>${fmt(avg)}</td><td><strong>${fmt(nav)}</strong></td>
+      <td>${fmtCr(iv)}</td><td><strong>${fmtCr(cv)}</strong></td>
+      <td class="${pnlCls}">${fmtS(pnl)}</td><td class="${pnlCls}">${fmtPct(pct)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('mfTfoot').innerHTML=`<tr class="total-row">
+    <td colspan="4">TOTAL (${mfHoldings.length} funds)</td>
+    <td>${fmtCr(totalI)}</td><td><strong>${fmtCr(totalV)}</strong></td>
+    <td class="${totalP>=0?'pnl-pos':'pnl-neg'}">${fmtS(totalP)}</td>
+    <td class="${totalP>=0?'pnl-pos':'pnl-neg'}">${fmtPct(pnlPct)}</td>
+  </tr>`;
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>

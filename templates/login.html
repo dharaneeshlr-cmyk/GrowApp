@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — BudgetCraft</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0e0d;--paper:#f5f0e8;--cream:#ede7d9;
+  --gold:#c9a84c;--gold-light:#e8d49a;
+}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--ink);
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  padding:1.5rem;
+  position:relative;overflow:hidden;
+}
+/* animated grid background */
+body::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(201,168,76,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,.07) 1px,transparent 1px);
+  background-size:52px 52px;
+  animation:gridMove 24s linear infinite;
+}
+@keyframes gridMove{from{background-position:0 0}to{background-position:52px 52px}}
+.glow{position:absolute;width:600px;height:600px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(201,168,76,.10) 0%,transparent 65%)}
+.g1{top:-220px;left:-140px}.g2{bottom:-220px;right:-120px}
+
+.card{
+  background:var(--paper);border-radius:24px;
+  width:100%;max-width:420px;padding:2.75rem 2.5rem;
+  box-shadow:0 24px 64px rgba(0,0,0,.35);
+  position:relative;z-index:1;
+  animation:riseIn .4s cubic-bezier(.4,0,.2,1);
+}
+@keyframes riseIn{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Brand */
+.brand{display:flex;align-items:center;gap:13px;margin-bottom:2rem}
+.brand-icon{
+  width:46px;height:46px;background:var(--ink);border-radius:13px;
+  display:flex;align-items:center;justify-content:center;font-size:21px;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
+.brand h1{font-family:'DM Serif Display',serif;font-size:1.7rem;letter-spacing:-.025em;color:var(--ink)}
+
+.welcome{font-family:'DM Serif Display',serif;font-size:1.45rem;color:var(--ink);margin-bottom:.35rem}
+.subtitle{font-size:.88rem;color:#999;margin-bottom:2rem}
+
+/* Error banner */
+.error-banner{
+  display:flex;align-items:center;gap:9px;
+  background:#fff2f2;border:1.5px solid #fbc8c8;color:#c0392b;
+  border-radius:10px;padding:11px 14px;font-size:.84rem;
+  margin-bottom:1.25rem;
+  animation:shake .3s ease;
+}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}60%{transform:translateX(7px)}}
+.error-icon{font-size:16px;flex-shrink:0}
+
+/* Form */
+.form-group{margin-bottom:1.1rem}
+.form-group label{
+  display:block;font-size:.75rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.09em;color:#999;margin-bottom:7px;
+}
+.input-wrap{position:relative}
+.input-icon{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:15px;opacity:.38;pointer-events:none;
+}
+.form-group input{
+  width:100%;font-family:'DM Sans',sans-serif;font-size:.96rem;
+  padding:11px 14px 11px 42px;
+  border:1.5px solid var(--cream);border-radius:10px;
+  outline:none;background:#fff;color:var(--ink);
+  transition:border-color .2s,box-shadow .2s;
+}
+.form-group input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.14)}
+.pw-toggle{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:15px;
+  opacity:.38;transition:opacity .15s;padding:3px;
+}
+.pw-toggle:hover{opacity:.7}
+
+.btn{
+  width:100%;background:var(--ink);color:var(--paper);border:none;
+  padding:13px;border-radius:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-weight:600;font-size:1rem;
+  letter-spacing:.01em;
+  transition:background .2s,transform .1s,box-shadow .2s;
+  margin-top:.3rem;
+  box-shadow:0 4px 16px rgba(15,14,13,.22);
+}
+.btn:hover{background:#2a2520;transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,14,13,.28)}
+.btn:active{transform:translateY(0);box-shadow:0 4px 12px rgba(15,14,13,.18)}
+
+.hint{
+  margin-top:1.5rem;padding-top:1.25rem;
+  border-top:1px solid var(--cream);
+  display:flex;align-items:center;gap:8px;
+  font-size:.8rem;color:#bbb;
+}
+.hint-badge{
+  background:var(--cream);color:#888;
+  padding:3px 8px;border-radius:5px;font-size:.75rem;font-weight:600;
+  white-space:nowrap;
+}
+</style>
+</head>
+<body>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+
+<div class="card">
+  <div class="brand">
+    <div class="brand-icon">₹</div>
+    <h1>BudgetCraft</h1>
+  </div>
+
+  <div class="welcome">Welcome back</div>
+  <div class="subtitle">Sign in to your personal finance dashboard</div>
+
+  {% if error %}
+  <div class="error-banner">
+    <span class="error-icon">⚠️</span>
+    <span>{{ error }}</span>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/login" autocomplete="on">
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" name="username" placeholder="Enter username"
+               autocomplete="username" autofocus
+               value="{{ request.form.get('username', '') }}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" name="password" id="pwField"
+               placeholder="Enter password" autocomplete="current-password">
+        <button type="button" class="pw-toggle" id="pwToggle"
+                onclick="togglePw()" title="Show/hide password">👁️</button>
+      </div>
+    </div>
+
+    <button type="submit" class="btn">Sign In →</button>
+  </form>
+
+  <div class="hint">
+    <span class="hint-badge">Local App</span>
+    <span>Running on your Mac · Data stored in budget.db</span>
+  </div>
+</div>
+
+<script>
+function togglePw(){
+  const f=document.getElementById('pwField'),b=document.getElementById('pwToggle');
+  if(f.type==='password'){f.type='text';b.textContent='🙈';}
+  else{f.type='password';b.textContent='👁️';}
+}
+</script>
+</body>
+</html>

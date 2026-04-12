@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoBasket — FinHub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f0e0d;--paper:#f5f0e8;--cream:#ede7d9;--cream2:#e4ddd0;
+  --gold:#c9a84c;--gold-dark:#8a6d2f;
+  --green:#2d6a4f;--green-l:#d8f3dc;
+  --blue:#1d3557;--blue-l:#d6e4f0;
+  --red:#9c2323;--red-l:#f5d6d6;
+  --purple:#7b2d8b;--purple-l:#ead6f0;
+  --amber:#b5591a;--amber-l:#fce8d5;
+  --shadow:0 4px 24px rgba(15,14,13,.09);--shadow-lg:0 12px 40px rgba(15,14,13,.16);
+  --r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Nav ── */
+nav{background:var(--ink);color:var(--paper);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,.3);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-brand{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--gold);letter-spacing:-.01em}
+.nav-sep{color:rgba(255,255,255,.25);margin:0 4px}
+.nav-page{font-size:.9rem;color:rgba(255,255,255,.7)}
+.nav-status{display:flex;align-items:center;gap:6px;font-size:.75rem}
+.dot{width:7px;height:7px;border-radius:50%;background:#6fcf97;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-right{display:flex;gap:.5rem;align-items:center}
+.btn-n{padding:6px 13px;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:500;border:none;display:flex;align-items:center;gap:4px;transition:all .18s;text-decoration:none;white-space:nowrap}
+.btn-outline{background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.15)}
+.btn-outline:hover{background:rgba(255,255,255,.16);color:#fff}
+.btn-primary{background:var(--red);color:#fff;font-weight:600}
+.btn-primary:hover{background:#7a1919}
+.btn-green{background:var(--green);color:#fff;font-weight:600}
+.btn-green:hover{background:#1e5f44}
+
+/* ── Layout ── */
+.layout{display:flex;flex:1;min-height:0}
+
+/* ── Sidebar ── */
+.sidebar{width:240px;background:#fff;border-right:1px solid var(--cream);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-hdr{padding:.85rem 1rem .5rem;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:#bbb;font-weight:700}
+.basket-item{padding:.7rem 1rem;cursor:pointer;border-left:3px solid transparent;transition:all .15s;position:relative}
+.basket-item:hover{background:var(--paper);border-left-color:var(--cream2)}
+.basket-item.active{background:#fdf6ff;border-left-color:var(--red)}
+.basket-item-name{font-weight:600;font-size:.88rem;margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.basket-abbr{width:28px;height:18px;border-radius:4px;font-size:.62rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.basket-item-sub{font-size:.72rem;color:#aaa}
+.basket-item-regime{display:inline-block;margin-top:4px;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.regime-bull-calm{background:#d8f3dc;color:#1e6640}
+.regime-bull-fear{background:#fff3cd;color:#856404}
+.regime-bear-calm{background:#e8f4fd;color:#0a4a7e}
+.regime-bear-fear{background:#f5d6d6;color:#7a1919}
+.regime-defensive{background:#f0f0f0;color:#555}
+.regime-active{background:#d8f3dc;color:#1e6640}
+.sidebar-add{padding:.75rem 1rem;border-top:1px solid var(--cream);margin-top:auto}
+.sidebar-add button{width:100%;padding:8px;border-radius:8px;border:1.5px dashed var(--cream2);background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;color:#999;transition:all .15s}
+.sidebar-add button:hover{border-color:var(--red);color:var(--red);background:var(--red-l)}
+
+/* ── Main content ── */
+.content{flex:1;overflow-y:auto;padding:1.5rem 2rem 4rem}
+
+/* ── Hero strip ── */
+.hero-strip{background:var(--ink);color:var(--paper);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;position:relative;overflow:hidden}
+.hero-strip::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.05) 1px,transparent 1px);background-size:36px 36px}
+.hs-item{position:relative;z-index:1}
+.hs-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;opacity:.45;font-weight:600;margin-bottom:3px}
+.hs-val{font-family:'DM Serif Display',serif;font-size:1.6rem;line-height:1}
+.hs-sub{font-size:.72rem;opacity:.45;margin-top:3px}
+.hs-val.gold{color:var(--gold)}
+.hs-val.green{color:#6fcf97}
+.hs-val.red{color:#eb5757}
+
+/* ── Basket cards grid ── */
+.baskets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem}
+.basket-card{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);cursor:pointer;transition:transform .2s,box-shadow .2s;overflow:hidden;border-top:4px solid}
+.basket-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.bc-top{padding:1rem 1rem .6rem;display:flex;align-items:flex-start;justify-content:space-between}
+.bc-name{font-weight:700;font-size:.95rem}
+.bc-sub{font-size:.73rem;color:#999;margin-top:2px}
+.bc-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;padding:.7rem 1rem;border-top:1px solid var(--cream)}
+.bc-metric-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:#bbb;font-weight:600;margin-bottom:2px}
+.bc-metric-val{font-family:'DM Serif Display',serif;font-size:1.15rem;line-height:1}
+.bc-footer{padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;background:var(--paper)}
+.bc-date{font-size:.72rem;color:#aaa}
+.bc-open{font-size:.8rem;color:var(--blue);font-weight:600;cursor:pointer;background:none;border:none}
+
+/* ── Holdings perf section ── */
+.perf-section{margin-bottom:1.5rem}
+.perf-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
+.perf-title{font-family:'DM Serif Display',serif;font-size:1.15rem}
+.perf-sub{font-size:.78rem;color:#888;margin-top:1px}
+.perf-toggle{display:flex;gap:3px;background:var(--cream);border-radius:7px;padding:3px}
+.perf-toggle button{padding:5px 14px;border-radius:5px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;color:#888;transition:all .15s;font-weight:500}
+.perf-toggle button.active{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.perf-box{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.perf-box-hdr{padding:.75rem 1rem;font-size:.78rem;font-weight:700;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--cream)}
+.perf-item{display:flex;align-items:center;padding:.65rem 1rem;border-bottom:1px solid var(--cream);gap:.75rem}
+.perf-item:last-child{border-bottom:none}
+.perf-rank{width:20px;font-size:.78rem;color:#aaa;font-weight:700;flex-shrink:0}
+.perf-sym{font-weight:700;font-size:.88rem}
+.perf-basket{font-size:.7rem;color:#aaa}
+.perf-right{margin-left:auto;text-align:right}
+.perf-price{font-size:.82rem;color:#666}
+.perf-pct{font-size:.88rem;font-weight:700}
+.pos{color:#2d6a4f}.neg{color:#9c2323}
+
+/* ── Detail panel ── */
+.detail-panel{display:none;animation:slUp .22s ease}
+.detail-panel.active{display:block}
+@keyframes slUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.detail-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:1rem;flex-wrap:wrap}
+.detail-name{font-family:'DM Serif Display',serif;font-size:1.6rem;letter-spacing:-.02em}
+.detail-sub{font-size:.82rem;color:#888;margin-top:3px}
+.detail-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+
+/* ── Instrument table ── */
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:1.1rem}
+.card-hdr{padding:.9rem 1.1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--cream)}
+.card-hdr-title{font-family:'DM Serif Display',serif;font-size:1rem}
+.card-body{padding:1rem 1.1rem}
+.itbl{width:100%;border-collapse:collapse;font-size:.83rem}
+.itbl th{padding:7px 10px;text-align:right;font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;color:#bbb;background:var(--paper)}
+.itbl th:first-child,.itbl th:nth-child(2){text-align:left}
+.itbl td{padding:9px 10px;border-bottom:1px solid var(--cream);text-align:right;vertical-align:middle}
+.itbl td:first-child,.itbl td:nth-child(2){text-align:left}
+.itbl tr:last-child td{border-bottom:none}
+.itbl tr:hover td{background:#fafaf8}
+.itbl .total-row td{background:var(--paper);font-weight:700;border-top:2px solid var(--cream2)}
+.sym-chip{display:inline-block;padding:2px 8px;border-radius:5px;background:#e8f4fd;color:#1d3557;font-weight:700;font-size:.78rem;letter-spacing:.03em}
+
+/* ── NAV chart area ── */
+.nav-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem;margin-bottom:1rem}
+.nkpi{background:var(--paper);border-radius:10px;padding:.75rem 1rem}
+.nkpi-label{font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;color:#aaa;font-weight:600;margin-bottom:3px}
+.nkpi-val{font-family:'DM Serif Display',serif;font-size:1.3rem;line-height:1}
+
+/* ── Rebalance panel ── */
+.rebal-order{display:flex;align-items:center;justify-content:space-between;padding:.65rem .9rem;background:var(--paper);border-radius:8px;margin-bottom:.5rem;font-size:.84rem}
+.rebal-order:last-child{margin-bottom:0}
+.order-sym{font-weight:700}
+.order-txn{padding:2px 8px;border-radius:5px;font-size:.72rem;font-weight:700}
+.txn-buy{background:var(--green-l);color:var(--green)}
+.txn-sell{background:var(--red-l);color:var(--red)}
+
+/* ── Forms ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,14,13,.55);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:1.6rem;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.28);animation:slUp .2s ease}
+.modal h2{font-family:'DM Serif Display',serif;font-size:1.25rem;margin-bottom:1.1rem}
+.fg{margin-bottom:.8rem}
+.fg label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:4px;font-weight:600}
+.fg input,.fg select,.fg textarea{width:100%;font-family:'DM Sans',sans-serif;font-size:.9rem;padding:8px 11px;border:1.5px solid var(--cream);border-radius:8px;outline:none;transition:border-color .15s;color:var(--ink);resize:vertical}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.fg-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.1rem;flex-wrap:wrap}
+.btn-cancel{padding:8px 18px;border-radius:8px;border:1.5px solid var(--cream);background:#fff;font-family:'DM Sans',sans-serif;cursor:pointer;font-size:.85rem}
+.btn-cancel:hover{background:var(--cream)}
+.btn-save{padding:8px 22px;border-radius:8px;background:var(--ink);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer}
+.btn-save:hover{background:#2a2520}
+.instr-row{display:grid;grid-template-columns:1fr 80px 80px 90px auto;gap:.4rem;align-items:center;margin-bottom:.4rem}
+.instr-row input,.instr-row select{font-family:'DM Sans',sans-serif;font-size:.84rem;padding:6px 8px;border:1.5px solid var(--cream);border-radius:7px;outline:none;width:100%;transition:border-color .15s}
+.instr-row input:focus,.instr-row select:focus{border-color:var(--gold)}
+.btn-rm{background:none;border:none;color:#ccc;cursor:pointer;font-size:.82rem;padding:4px 7px;border-radius:5px}
+.btn-rm:hover{color:var(--red);background:var(--red-l)}
+.pct-sum{font-size:.78rem;color:#888;margin-top:.25rem}
+.pct-sum.ok{color:var(--green)}.pct-sum.warn{color:var(--red)}
+.instr-hdr{display:grid;grid-template-columns:1fr 80px 80px 90px auto;gap:.4rem;margin-bottom:.3rem;padding:0 2px}
+.instr-hdr span{font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;color:#bbb;font-weight:600}
+
+/* ── Orders log ── */
+.order-log-row{display:flex;align-items:center;gap:.75rem;padding:.6rem .9rem;border-bottom:1px solid var(--cream);font-size:.82rem}
+.order-log-row:last-child{border-bottom:none}
+
+/* ── Toast / loading ── */
+.lbar{position:fixed;top:0;left:0;height:3px;background:var(--gold);width:0;transition:width .3s;z-index:999}
+.lbar.on{width:65%}.lbar.done{width:100%}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:9px;font-size:.84rem;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(8px);transition:all .28s;z-index:600;pointer-events:none;max-width:340px}
+.toast.show{opacity:1;transform:translateY(0)}
+.empty-state{text-align:center;padding:3rem 1rem;color:#bbb}
+.empty-state .icon{font-size:2.5rem;margin-bottom:.5rem}
+.empty-state p{font-size:.88rem;line-height:1.6}
+canvas{max-height:260px}
+.regime-badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
+.tag{display:inline-block;padding:2px 9px;border-radius:5px;font-size:.72rem;font-weight:600}
+
+@media(max-width:900px){.perf-grid{grid-template-columns:1fr}.nav-kpis{grid-template-columns:repeat(2,1fr)}.hero-strip{grid-template-columns:repeat(2,1fr)}.baskets-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.layout{flex-direction:column}.sidebar{width:100%;height:auto;border-right:none;border-bottom:1px solid var(--cream)}.content{padding:1rem 1rem 3rem}.fg-row,.fg-row-3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="lbar" id="lbar"></div>
+
+<nav>
+  <div class="nav-left">
+    <span class="nav-brand">FinHub</span>
+    <span class="nav-sep">/</span>
+    <span class="nav-page">🧺 AutoBasket</span>
+  </div>
+  <div class="nav-status" id="kiteStatus"><span class="dot" style="background:#aaa"></span><span id="kiteStatusTxt">Checking…</span></div>
+  <div class="nav-right">
+    <a href="/home" class="btn-n btn-outline">🏠 Home</a>
+    <button class="btn-n btn-green" onclick="showCreateModal()">＋ New Basket</button>
+    <a href="/logout" class="btn-n btn-outline">🚪</a>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-hdr">Baskets</div>
+    <div id="sidebarList"></div>
+    <div class="sidebar-add"><button onclick="showCreateModal()">＋ New Basket</button></div>
+  </div>
+
+  <!-- Main content -->
+  <div class="content" id="mainContent">
+
+    <!-- ── Dashboard view ── -->
+    <div id="dashView">
+      <!-- Hero strip -->
+      <div class="hero-strip">
+        <div class="hs-item">
+          <div class="hs-label">Market (Nifty)</div>
+          <div class="hs-val gold" id="hNifty">—</div>
+          <div class="hs-sub" id="hNiftyChg">Loading…</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Invested</div>
+          <div class="hs-val" id="hInvested">₹—</div>
+          <div class="hs-sub" id="hBasketCount">— baskets</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Current Value</div>
+          <div class="hs-val green" id="hValue">₹—</div>
+          <div class="hs-sub">All active baskets</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-label">Total P&amp;L</div>
+          <div class="hs-val" id="hPnl">₹—</div>
+          <div class="hs-sub" id="hPnlPct">—</div>
+        </div>
+      </div>
+
+      <!-- Basket cards -->
+      <div class="baskets-grid" id="basketsGrid"></div>
+
+      <!-- Holdings performance -->
+      <div class="perf-section">
+        <div class="perf-hdr">
+          <div>
+            <div class="perf-title">Holdings Performance</div>
+            <div class="perf-sub" id="perfSub">Across all active baskets</div>
+          </div>
+          <div class="perf-toggle">
+            <button class="active" onclick="setPerfMode('pnl',this)">Total Return</button>
+          </div>
+        </div>
+        <div class="perf-grid">
+          <div class="perf-box">
+            <div class="perf-box-hdr" style="color:var(--green)">▲ Top 5 — Best Performers</div>
+            <div id="topPerf"></div>
+          </div>
+          <div class="perf-box">
+            <div class="perf-box-hdr" style="color:var(--red)">▼ Bottom 5 — Worst Performers</div>
+            <div id="botPerf"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Basket detail view ── -->
+    <div id="detailView" class="detail-panel">
+      <div class="detail-hdr">
+        <div>
+          <button onclick="showDash()" style="background:none;border:none;cursor:pointer;font-size:.82rem;color:#888;padding:0;margin-bottom:.4rem;display:flex;align-items:center;gap:4px">← All Baskets</button>
+          <div class="detail-name" id="detailName">—</div>
+          <div class="detail-sub" id="detailSub">—</div>
+        </div>
+        <div class="detail-actions">
+          <button class="btn-n btn-green" onclick="refreshNav()">⟳ Refresh NAV</button>
+          <button class="btn-n btn-primary" onclick="showRebalance()">⚖ Rebalance</button>
+          <button class="btn-n btn-outline" style="color:var(--ink);background:#f0f0ee;border-color:#ddd" onclick="editBasket()">✏ Edit</button>
+          <button class="btn-n btn-outline" style="color:var(--red);border-color:#fbc8c8" onclick="deleteBasket()">🗑</button>
+        </div>
+      </div>
+
+      <!-- NAV KPIs -->
+      <div class="nav-kpis">
+        <div class="nkpi"><div class="nkpi-label">NAV</div><div class="nkpi-val" id="dNav" style="color:var(--blue)">—</div></div>
+        <div class="nkpi"><div class="nkpi-label">Return Since Inception</div><div class="nkpi-val" id="dReturn">—</div></div>
+        <div class="nkpi"><div class="nkpi-label">Capital Deployed</div><div class="nkpi-val" id="dCapital">—</div></div>
+        <div class="nkpi"><div class="nkpi-label">Current Value</div><div class="nkpi-val" id="dValue" style="color:var(--green)">—</div></div>
+      </div>
+
+      <!-- NAV Chart -->
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-hdr-title">📈 NAV History (Base 100)</div>
+          <span style="font-size:.75rem;color:#bbb" id="detailInception"></span>
+        </div>
+        <div class="card-body"><canvas id="chartNav" height="220"></canvas></div>
+      </div>
+
+      <!-- Holdings table -->
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-hdr-title">📋 Holdings</div>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <span id="holdingsUpdated" style="font-size:.72rem;color:#bbb"></span>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="itbl" id="holdingsTbl">
+            <thead>
+              <tr>
+                <th style="text-align:left">Symbol</th>
+                <th style="text-align:left">Exchange</th>
+                <th>Target %</th>
+                <th>Actual %</th>
+                <th>Qty</th>
+                <th>Avg Price</th>
+                <th>LTP</th>
+                <th>Invested</th>
+                <th>Value</th>
+                <th>P&amp;L</th>
+                <th>P&amp;L %</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsTbody"></tbody>
+            <tfoot id="holdingsTfoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Order Log -->
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-hdr-title">📑 Order Log</div>
+          <span style="font-size:.72rem;color:#bbb">Recent rebalance orders</span>
+        </div>
+        <div id="orderLog" style="max-height:260px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Create / Edit Basket Modal ── -->
+<div class="modal-overlay" id="basketModal">
+  <div class="modal">
+    <h2 id="modalTitle">New Basket</h2>
+    <input type="hidden" id="editingId">
+    <div class="fg-row">
+      <div class="fg"><label>Basket Name *</label><input id="bName" placeholder="e.g. Multi-Factor Advantage"></div>
+      <div class="fg"><label>Strategy Type</label><input id="bStrategy" placeholder="e.g. Factor ETF · monthly"></div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Capital Deployed (₹) *</label><input id="bCapital" type="number" min="0" step="1000" placeholder="100000"></div>
+      <div class="fg"><label>Rebalance Frequency</label>
+        <select id="bRebalance">
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="annual">Annual</option>
+          <option value="manual">Manual</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg"><label>Inception Date</label><input id="bInception" type="date"></div>
+      <div class="fg"><label>Status</label>
+        <select id="bStatus"><option value="active">Active</option><option value="paused">Paused</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="bNotes" rows="2" placeholder="Strategy notes, regime, etc."></textarea></div>
+
+    <!-- Instruments -->
+    <div style="margin-top:.85rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#999">Instruments &amp; Target Allocation</div>
+        <div class="pct-sum" id="pctSum">0% allocated</div>
+      </div>
+      <div class="instr-hdr">
+        <span>Symbol</span><span>Exch</span><span>Target %</span><span>Qty</span><span>Avg ₹</span><span></span>
+      </div>
+      <div id="instrRows"></div>
+      <button onclick="addInstrRow()" style="margin-top:.4rem;padding:5px 12px;border-radius:6px;border:1.5px dashed var(--cream2);background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.78rem;color:#999">＋ Add Instrument</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('basketModal')">Cancel</button>
+      <button class="btn-save" onclick="saveBasket()">Save Basket</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Rebalance Modal ── -->
+<div class="modal-overlay" id="rebalModal">
+  <div class="modal" style="max-width:560px">
+    <h2>⚖ Rebalance Orders</h2>
+    <div style="font-size:.83rem;color:#666;margin-bottom:1rem" id="rebalInfo">Calculating required trades to match target allocation…</div>
+    <div id="rebalOrders"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('rebalModal')">Close</button>
+      <button class="btn-save" id="placeOrdersBtn" onclick="placeOrders()" style="background:var(--green)">✅ Place Orders via Kite</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════════════
+const fmtR  = n => { const v=isNaN(parseFloat(n))?0:parseFloat(n), a=Math.abs(v); return a>=1e7?'₹'+(a/1e7).toFixed(2)+'Cr':a>=1e5?'₹'+(a/1e5).toFixed(2)+'L':'₹'+v.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+const fmtN  = n => { const v=isNaN(parseFloat(n))?0:parseFloat(n); return '₹'+Math.abs(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+const fmtS  = n => { const v=isNaN(parseFloat(n))?0:parseFloat(n); return (v<0?'−':'+')+fmtR(Math.abs(v)); };
+const fmtP  = n => { const v=isNaN(parseFloat(n))?0:parseFloat(n); return (v>=0?'+':'')+v.toFixed(2)+'%'; };
+const fmtNav= n => { const v=isNaN(parseFloat(n))?100:parseFloat(n); return v.toFixed(2); };
+function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function startLoad(){document.getElementById('lbar').className='lbar on';}
+function doneLoad(){const b=document.getElementById('lbar');b.className='lbar done';setTimeout(()=>b.className='lbar',400);}
+async function api(url,opts={}){
+  startLoad();
+  const r=await fetch(url,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...opts});
+  doneLoad();
+  if(!r.ok){
+    if(r.status===401){window.location='/login';throw new Error('Not logged in');}
+    const e=await r.json().catch(()=>({error:'HTTP '+r.status}));
+    toast('❌ '+(e.error||'Error'));
+    throw new Error(e.error||'Error');
+  }
+  return r.json();
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Regime badge helper
+const REGIME_MAP={
+  'bull-calm':'BULL+CALM','bull-fear':'BULL+FEAR','bear-calm':'BEAR+CALM','bear-fear':'BEAR+FEAR',
+  'defensive':'DEFENSIVE','active':'ACTIVE','bear fear':'BEAR+FEAR','bull calm':'BULL+CALM'
+};
+const REGIME_CLS={
+  'bull-calm':'regime-bull-calm','bull-fear':'regime-bull-fear',
+  'bear-calm':'regime-bear-calm','bear-fear':'regime-bear-fear',
+  'defensive':'regime-defensive','active':'regime-active'
+};
+function regimeBadge(notes){
+  const n=(notes||'').toLowerCase();
+  for(const [k,v] of Object.entries(REGIME_MAP)){if(n.includes(k))return `<span class="basket-item-regime ${REGIME_CLS[k]||'regime-active'}">${v}</span>`;}
+  return '';
+}
+function regimeBadgeCard(notes){
+  const n=(notes||'').toLowerCase();
+  for(const [k,v] of Object.entries(REGIME_MAP)){if(n.includes(k))return `<span class="regime-badge ${REGIME_CLS[k]||'regime-active'}" style="font-size:.7rem;padding:2px 9px">${v}</span>`;}
+  return '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+let baskets = [];
+let activeBasketId = null;
+let navChart = null;
+let perfData = [];
+let rebalOrders = [];
+let livePricesCache = {};   // basket_id → { SYMBOL: ltp, … } — persists across loadBaskets()
+
+// Basket colour palette
+const PALETTE = ['#9c2323','#1d3557','#2d6a4f','#7b2d8b','#b5591a','#0d6e6e','#856404','#4a0e8f'];
+const ABBRS   = ['ERS','EMS','SMS','SRS','FMP','GLD','ALF','MOM'];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+async function init(){
+  await checkKiteStatus();
+  // Check AutoBasket API exists on this server
+  try{
+    const test = await fetch('/api/ab/baskets',{credentials:'same-origin'});
+    if(test.status===404){
+      document.getElementById('mainContent').innerHTML=`
+        <div style="text-align:center;padding:4rem 2rem;max-width:520px;margin:0 auto">
+          <div style="font-size:3rem;margin-bottom:1rem">⚠️</div>
+          <h2 style="font-family:'DM Serif Display',serif;margin-bottom:.75rem">Server needs restart</h2>
+          <p style="color:#666;line-height:1.7;margin-bottom:1.25rem">
+            The AutoBasket API routes are not loaded. Your Flask server is running an older <strong>app.py</strong>.
+          </p>
+          <div style="background:#f5f0e8;border-radius:10px;padding:1rem 1.25rem;text-align:left;font-size:.88rem;line-height:2">
+            1. Stop Flask &mdash; press <strong>Ctrl+C</strong> in terminal<br>
+            2. Replace files with the new zip<br>
+            3. Run <code style="background:#e4ddd0;padding:1px 6px;border-radius:4px">bash run.sh</code><br>
+            4. Look for: <em>🧺 AutoBasket: 10 routes registered</em>
+          </div>
+        </div>`;
+      return;
+    }
+  }catch(e){}
+  await loadBaskets();
+  await loadPerf();
+}
+
+async function checkKiteStatus(){
+  try{
+    const cfg=await api('/api/kite/config');
+    const el=document.getElementById('kiteStatus');
+    const txt=document.getElementById('kiteStatusTxt');
+    if(cfg.has_token){
+      el.querySelector('.dot').style.background='#6fcf97';
+      txt.textContent='Kite Connected';
+    } else {
+      el.querySelector('.dot').style.background='#eb5757';
+      txt.textContent='Kite not connected';
+    }
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOAD & RENDER BASKETS
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadBaskets(){
+  try{ baskets = await api('/api/ab/baskets'); }catch(e){ baskets=[]; console.warn('loadBaskets GET error:',e); }
+  let summ={basket_count:0,total_capital:0,total_value:0,total_pnl:0,baskets:[]};
+  try{ summ = await api('/api/ab/summary'); }catch(e){ console.warn('loadBaskets summary error:',e); }
+
+  // Build allocation lookup by basket id
+  const allocMap={};
+  (summ.baskets||[]).forEach(b=>{ allocMap[b.id]=b.alloc_pct||0; });
+  // Attach alloc_pct to each basket object for renderBasketCards
+  baskets.forEach(b=>{ b.alloc_pct=allocMap[b.id]||0; });
+
+  // Hero strip — safe set
+  const setTxt=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  setTxt('hInvested',   fmtR(summ.total_capital));
+  setTxt('hValue',      fmtR(summ.total_value));
+  setTxt('hBasketCount',`${summ.basket_count} basket${summ.basket_count!==1?'s':''}`);
+  setTxt('hNifty',      '—');
+  setTxt('hNiftyChg',   'Fetching…');
+  setTxt('hPnlPct',     fmtP(summ.total_capital>0?((summ.total_pnl/summ.total_capital)*100):0)+' overall');
+  const pEl=document.getElementById('hPnl');
+  if(pEl){pEl.textContent=fmtS(summ.total_pnl);pEl.className='hs-val '+(summ.total_pnl>=0?'green':'red');}
+
+  // Fetch Nifty live price
+  try{
+    const nf=await api('/api/ab/nifty');
+    if(nf&&nf.ltp){
+      setTxt('hNifty', fmtN(nf.ltp));
+      setTxt('hNiftyChg', (nf.source==='nse'?'Live · NSE':'Live · Kite'));
+    } else {
+      setTxt('hNifty','—');
+      setTxt('hNiftyChg', nf.error||'Unavailable');
+    }
+  }catch(e){ setTxt('hNiftyChg','Unavailable'); }
+
+  try{ renderSidebar(); }catch(e){ console.warn('renderSidebar error:',e); }
+  try{ renderBasketCards(); }catch(e){ console.warn('renderBasketCards error:',e); }
+}
+
+function renderSidebar(){
+  const list=document.getElementById('sidebarList');
+  if(!baskets.length){
+    list.innerHTML='<div style="padding:1rem;font-size:.8rem;color:#bbb;text-align:center">No baskets yet.<br>Click + New Basket</div>';
+    return;
+  }
+  list.innerHTML=baskets.map((b,i)=>{
+    const color=PALETTE[i%PALETTE.length];
+    const abbr=ABBRS[i%ABBRS.length];
+    const active=b.id===activeBasketId?'active':'';
+    const ret=(b.nav-100);
+    const retCls=ret>=0?'pos':'neg';
+    return `<div class="basket-item ${active}" onclick="openBasket('${b.id}')">
+      <div class="basket-item-name">
+        <span class="basket-abbr" style="background:${color}22;color:${color}">${abbr}</span>
+        ${escH(b.name)}
+      </div>
+      <div class="basket-item-sub">${escH(b.strategy||'')}</div>
+      <div style="margin-top:3px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:.72rem;font-weight:700;color:${color}">NAV ${fmtNav(b.nav)}</span>
+        <span style="font-size:.72rem;font-weight:700" class="${retCls}">${fmtP(ret)}</span>
+      </div>
+      ${regimeBadge(b.notes)}
+    </div>`;
+  }).join('');
+}
+
+function renderBasketCards(){
+  const grid=document.getElementById('basketsGrid');
+  if(!baskets.length){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">🧺</div><p>No baskets yet.<br>Click <strong>+ New Basket</strong> to create your first strategy basket.</p></div>`;
+    return;
+  }
+  grid.innerHTML=baskets.map((b,i)=>{
+    const color=PALETTE[i%PALETTE.length];
+    const ret=b.nav-100;
+    const retCls=ret>=0?'pos':'neg';
+    const allocPct=b.alloc_pct||0;
+    return `<div class="basket-card" style="border-top-color:${color}" onclick="openBasket('${b.id}')">
+      <div class="bc-top">
+        <div>
+          <div class="bc-name">${escH(b.name)} ${regimeBadgeCard(b.notes)}</div>
+          <div class="bc-sub">${escH(b.strategy||'Factor ETF · '+b.rebalance)}</div>
+        </div>
+      </div>
+      <div class="bc-metrics">
+        <div><div class="bc-metric-label">NAV</div><div class="bc-metric-val" style="color:${color}">${fmtNav(b.nav)}</div><div style="font-size:.68rem;color:#bbb">Base 100</div></div>
+        <div><div class="bc-metric-label">Return</div><div class="bc-metric-val ${retCls}">${fmtP(ret)}</div><div style="font-size:.68rem;color:#bbb">Since inception</div></div>
+        <div><div class="bc-metric-label">Capital</div><div class="bc-metric-val" style="font-size:.95rem">${fmtR(b.capital)}</div><div style="font-size:.68rem;color:#bbb">Deployed</div></div>
+        <div><div class="bc-metric-label">Allocation</div><div class="bc-metric-val" style="color:var(--blue);font-size:.95rem">${fmtP(allocPct)}</div><div style="font-size:.68rem;color:#bbb">Of portfolio</div></div>
+      </div>
+      <div class="bc-footer">
+        <span class="bc-date">Since ${b.inception||'—'}</span>
+        <button class="bc-open" onclick="event.stopPropagation();openBasket('${b.id}')">Open →</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PERFORMANCE SECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+async function loadPerf(){
+  try{ const d=await api('/api/ab/holdings_perf'); perfData=d.instruments||[]; }catch(e){ perfData=[]; }
+  renderPerf();
+  const n=new Set(baskets.map(b=>b.instruments?.length||0)).size;
+  const total=baskets.reduce((s,b)=>(b.instruments||[]).length+s,0);
+  document.getElementById('perfSub').textContent=`Top & bottom performers across ${total} holdings in active baskets`;
+}
+
+function renderPerf(){
+  const top5=perfData.slice(0,5);
+  const bot5=[...perfData].sort((a,b)=>a.pnl_pct-b.pnl_pct).slice(0,5);
+  document.getElementById('topPerf').innerHTML=top5.length?top5.map((p,i)=>`
+    <div class="perf-item">
+      <div class="perf-rank">${i+1}</div>
+      <div><div class="perf-sym">${p.tradingsymbol}</div><div class="perf-basket">${p.basket_name}</div></div>
+      <div class="perf-right"><div class="perf-price">${p.ltp?fmtN(p.ltp):'—'}</div><div class="perf-pct pos">${fmtP(p.pnl_pct)}</div></div>
+    </div>`).join(''):`<div class="perf-item" style="color:#bbb;font-size:.82rem">No data — refresh NAV to load prices.</div>`;
+  document.getElementById('botPerf').innerHTML=bot5.length?bot5.map((p,i)=>`
+    <div class="perf-item">
+      <div class="perf-rank">${i+1}</div>
+      <div><div class="perf-sym">${p.tradingsymbol}</div><div class="perf-basket">${p.basket_name}</div></div>
+      <div class="perf-right"><div class="perf-price">${p.ltp?fmtN(p.ltp):'—'}</div><div class="perf-pct ${p.pnl_pct>=0?'pos':'neg'}">${fmtP(p.pnl_pct)}</div></div>
+    </div>`).join(''):`<div class="perf-item" style="color:#bbb;font-size:.82rem">No data yet.</div>`;
+}
+function setPerfMode(m,btn){document.querySelectorAll('.perf-toggle button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DETAIL VIEW
+// ═══════════════════════════════════════════════════════════════════════════════
+async function openBasket(id){
+  activeBasketId=id;
+  renderSidebar();
+  const b=baskets.find(x=>x.id===id);
+  if(!b) return;
+
+  document.getElementById('dashView').style.display='none';
+  document.getElementById('detailView').classList.add('active');
+
+  const i=baskets.indexOf(b);
+  const color=PALETTE[i%PALETTE.length];
+  const ret=b.nav-100;
+  document.getElementById('detailName').textContent=b.name;
+  document.getElementById('detailSub').textContent=(b.strategy||'')+(b.rebalance?' · '+b.rebalance:'')+regimeBadgeCard(b.notes);
+  document.getElementById('detailInception').textContent=`Since ${b.inception||'—'}`;
+  document.getElementById('dNav').textContent=fmtNav(b.nav);
+  document.getElementById('dNav').style.color=color;
+  document.getElementById('dReturn').textContent=fmtP(ret);
+  document.getElementById('dReturn').className='nkpi-val '+(ret>=0?'pos':'neg');
+  // Capital Deployed = sum of qty × avg_price across instruments (actual investment)
+  const actualDeployed=(b.instruments||[]).reduce((s,i)=>s+(parseFloat(i.avg_price||0)*parseInt(i.qty||0)),0);
+  document.getElementById('dCapital').textContent=fmtR(actualDeployed||b.capital);
+  document.getElementById('dValue').textContent=fmtR(b.latest_value||b.capital);
+
+  const cached = livePricesCache[id];
+  renderHoldingsTable(b, cached || {});
+  document.getElementById('holdingsUpdated').textContent = cached ? 'Live prices cached' : 'Showing avg price — click Refresh NAV for live';
+  await loadNavChart(id, color);
+  await loadOrderLog(id);
+}
+
+function showDash(){
+  activeBasketId=null;
+  renderSidebar();
+  document.getElementById('dashView').style.display='';
+  document.getElementById('detailView').classList.remove('active');
+}
+
+function renderHoldingsTable(basket, prices){
+  const instrs=basket.instruments||[];
+  const tbody=document.getElementById('holdingsTbody');
+  if(!instrs.length){
+    tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:#bbb">No instruments. Edit basket to add.</td></tr>';
+    return;
+  }
+  let totInv=0,totVal=0,totPnl=0;
+  // First pass: compute invested totals for actual allocation %
+  instrs.forEach(ins=>{ totInv+=ins.avg_price*ins.qty; });
+  let totVal2=0,totPnl2=0;
+  tbody.innerHTML=instrs.map(ins=>{
+    const sym=ins.tradingsymbol.toUpperCase();
+    const ltp=prices[sym]||ins.avg_price;
+    const inv=ins.avg_price*ins.qty;   // capital deployed = qty × avg_price
+    const val=ltp*ins.qty;
+    const pnl=val-inv;
+    const pct=inv>0?(pnl/inv*100):0;
+    const actualAlloc=totInv>0?(inv/totInv*100):0;
+    totVal2+=val;totPnl2+=pnl;
+    const cls=pnl>=0?'pos':'neg';
+    return `<tr>
+      <td><span class="sym-chip">${ins.tradingsymbol}</span></td>
+      <td><span style="font-size:.72rem;color:#888">${ins.exchange}</span></td>
+      <td>${ins.target_pct}%</td>
+      <td style="color:var(--blue);font-weight:600">${fmtP(actualAlloc)}</td>
+      <td>${ins.qty}</td>
+      <td>${fmtN(ins.avg_price)}</td>
+      <td><strong>${fmtN(ltp)}</strong>${prices[sym]?'<span style="font-size:.65rem;color:#6fcf97;margin-left:3px">●live</span>':'<span style="font-size:.65rem;color:#bbb;margin-left:3px">avg</span>'}</td>
+      <td>${fmtR(inv)}</td>
+      <td><strong>${fmtR(val)}</strong></td>
+      <td class="${cls}">${fmtS(pnl)}</td>
+      <td class="${cls}">${fmtP(pct)}</td>
+    </tr>`;
+  }).join('');
+  const totPct2=totInv>0?(totPnl2/totInv*100):0;
+  const tc=totPnl2>=0?'pos':'neg';
+  document.getElementById('holdingsTfoot').innerHTML=`<tr class="total-row">
+    <td colspan="7">TOTAL (${instrs.length} instruments)</td>
+    <td>${fmtR(totInv)}</td><td><strong>${fmtR(totVal2)}</strong></td>
+    <td class="${tc}">${fmtS(totPnl2)}</td><td class="${tc}">${fmtP(totPct2)}</td>
+  </tr>`;
+}
+
+async function loadNavChart(bid, color){
+  const rows=await api(`/api/ab/baskets/${bid}/nav`).catch(()=>[]);
+  const labels=rows.map(r=>r.nav_date);
+  const navs=rows.map(r=>r.nav);
+  if(navChart){try{navChart.destroy();}catch(e){} navChart=null;}
+  navChart=new Chart(document.getElementById('chartNav').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'NAV (Base 100)',data:navs,borderColor:color,backgroundColor:color+'18',
+       borderWidth:2.5,pointRadius:rows.length<=15?4:2,tension:.35,fill:true}
+    ]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`NAV: ${c.raw.toFixed(2)}`}}},
+      scales:{
+        y:{min:Math.min(95,...navs.map(v=>v-2)),
+           ticks:{callback:v=>v.toFixed(0)},grid:{color:'#f0ebe0'},
+           title:{display:true,text:'NAV (Base 100)'}},
+        x:{grid:{display:false}}
+      }
+    }
+  });
+}
+
+async function loadOrderLog(bid){
+  const orders=await api(`/api/ab/baskets/${bid}/orders`).catch(()=>[]);
+  const el=document.getElementById('orderLog');
+  if(!orders.length){
+    el.innerHTML='<div style="text-align:center;padding:1.5rem;color:#bbb;font-size:.83rem">No orders placed yet.</div>';
+    return;
+  }
+  el.innerHTML=orders.slice(0,30).map(o=>{
+    const cls=o.transaction_type==='BUY'?'txn-buy':'txn-sell';
+    return `<div class="order-log-row">
+      <span class="order-txn ${cls}">${o.transaction_type}</span>
+      <span class="sym-chip">${o.tradingsymbol}</span>
+      <span style="color:#666">Qty: <strong>${o.qty}</strong></span>
+      <span style="color:#666">@ ${fmtN(o.price)}</span>
+      <span class="tag" style="background:${o.status==='placed'?'#d8f3dc':o.status.startsWith('failed')?'#f5d6d6':'#f0f0ee'};color:${o.status==='placed'?'#1e6640':o.status.startsWith('failed')?'#9c2323':'#666'}">${o.status}</span>
+      <span style="color:#bbb;font-size:.72rem;margin-left:auto">${(o.created_at||'').slice(0,16)}</span>
+      ${o.order_id?`<span style="font-size:.7rem;color:#aaa">ID: ${o.order_id}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REFRESH NAV (LIVE PRICES FROM KITE)
+// ═══════════════════════════════════════════════════════════════════════════════
+async function refreshNav(){
+  if(!activeBasketId) return;
+  const btn=document.querySelector('.btn-n.btn-green');
+  btn.textContent='⟳ Refreshing…';btn.disabled=true;
+  try{
+    const result=await api(`/api/ab/baskets/${activeBasketId}/refresh`,{method:'POST',body:JSON.stringify({})});
+    toast(`✅ NAV updated: ${fmtNav(result.nav)} · Value: ${fmtR(result.total_value)}`);
+    // Store live prices in cache BEFORE loadBaskets overwrites basket objects
+    const prices = result.prices || {};
+    livePricesCache[activeBasketId] = prices;
+    // Update KPIs
+    document.getElementById('dNav').textContent=fmtNav(result.nav);
+    document.getElementById('dValue').textContent=fmtR(result.total_value);
+    const ret=result.nav-100;
+    document.getElementById('dReturn').textContent=fmtP(ret);
+    document.getElementById('dReturn').className='nkpi-val '+(ret>=0?'pos':'neg');
+    const now=new Date(); document.getElementById('holdingsUpdated').textContent='Live · '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    // Reload baskets (updates sidebar/cards) — must happen before re-render
+    await loadNavChart(activeBasketId, PALETTE[baskets.indexOf(baskets.find(x=>x.id===activeBasketId))%PALETTE.length]);
+    await loadBaskets();
+    await loadPerf();
+    // Re-render holdings with live prices (loadBaskets may have re-opened or re-rendered with stale data)
+    const b=baskets.find(x=>x.id===activeBasketId);
+    if(b) renderHoldingsTable(b, livePricesCache[activeBasketId] || {});
+  }catch(e){
+    toast('❌ Refresh failed: '+e.message);
+  }finally{
+    btn.textContent='⟳ Refresh NAV';btn.disabled=false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REBALANCE
+// ═══════════════════════════════════════════════════════════════════════════════
+async function showRebalance(){
+  if(!activeBasketId) return;
+  document.getElementById('rebalOrders').innerHTML='<div style="text-align:center;padding:1rem;color:#aaa">Calculating…</div>';
+  document.getElementById('rebalModal').classList.add('open');
+  try{
+    const result=await api(`/api/ab/baskets/${activeBasketId}/rebalance`,{method:'POST',body:JSON.stringify({place:false})});
+    rebalOrders=result.orders||[];
+    const b=baskets.find(x=>x.id===activeBasketId);
+    document.getElementById('rebalInfo').textContent=`${rebalOrders.length} trade${rebalOrders.length!==1?'s':''} needed to rebalance "${b?.name||''}" to target weights.`;
+    if(!rebalOrders.length){
+      document.getElementById('rebalOrders').innerHTML='<div style="text-align:center;padding:1.5rem;color:#2d6a4f;font-weight:600">✅ Portfolio is already balanced. No trades needed.</div>';
+      document.getElementById('placeOrdersBtn').disabled=true;
+      return;
+    }
+    document.getElementById('placeOrdersBtn').disabled=false;
+    document.getElementById('rebalOrders').innerHTML=rebalOrders.map(o=>`
+      <div class="rebal-order">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span class="order-txn ${o.transaction_type==='BUY'?'txn-buy':'txn-sell'}">${o.transaction_type}</span>
+          <div>
+            <div style="font-weight:700;font-size:.88rem">${o.tradingsymbol}</div>
+            <div style="font-size:.72rem;color:#aaa">Qty: ${o.current_qty} → ${o.target_qty}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700;font-size:.88rem">${Math.abs(o.qty)} units</div>
+          <div style="font-size:.72rem;color:#888">@ ${fmtN(o.price)} · ${fmtR(o.value)}</div>
+        </div>
+      </div>`).join('');
+  }catch(e){
+    document.getElementById('rebalOrders').innerHTML=`<div style="color:#9c2323;padding:1rem">${e.message}</div>`;
+  }
+}
+
+async function placeOrders(){
+  const btn=document.getElementById('placeOrdersBtn');
+  btn.disabled=true;btn.textContent='Placing…';
+  try{
+    const result=await api(`/api/ab/baskets/${activeBasketId}/rebalance`,{method:'POST',body:JSON.stringify({place:true})});
+    toast(`✅ ${result.orders?.length||0} orders placed via Kite`);
+    closeModal('rebalModal');
+    await loadOrderLog(activeBasketId);
+    await loadBaskets();
+  }catch(e){
+    toast('❌ Order placement failed: '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='✅ Place Orders via Kite';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CREATE / EDIT BASKET MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+let instrCount=0;
+function addInstrRow(sym='',exch='NSE',pct='',qty='',avg=''){
+  const id='ir'+instrCount++;
+  const div=document.createElement('div');
+  div.className='instr-row';div.id=id;
+  div.innerHTML=`
+    <input type="text" placeholder="e.g. NIFTYBEES" value="${sym}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();updatePctSum()">
+    <select><option value="NSE"${exch==='NSE'?' selected':''}>NSE</option><option value="BSE"${exch==='BSE'?' selected':''}>BSE</option></select>
+    <input type="number" placeholder="25" min="0" max="100" step="0.5" value="${pct}" oninput="updatePctSum()">
+    <input type="number" placeholder="0" min="0" value="${qty}">
+    <input type="number" placeholder="0" min="0" step="0.01" value="${avg}">
+    <button class="btn-rm" onclick="document.getElementById('${id}').remove();updatePctSum()">✕</button>`;
+  document.getElementById('instrRows').appendChild(div);
+  updatePctSum();
+}
+function updatePctSum(){
+  let sum=0;
+  document.querySelectorAll('#instrRows .instr-row').forEach(r=>{
+    const inp=r.querySelectorAll('input')[1];  // input[1] = target %
+    if(inp) sum+=parseFloat(inp.value||0);
+  });
+  const el=document.getElementById('pctSum');
+  el.textContent=sum.toFixed(1)+'% allocated';
+  el.className='pct-sum '+(Math.abs(sum-100)<0.1?'ok':sum>100?'warn':'');
+}
+
+function showCreateModal(){
+  document.getElementById('editingId').value='';
+  document.getElementById('modalTitle').textContent='New Basket';
+  document.getElementById('bName').value='';
+  document.getElementById('bStrategy').value='';
+  document.getElementById('bCapital').value='';
+  document.getElementById('bRebalance').value='monthly';
+  document.getElementById('bInception').value=new Date().toISOString().slice(0,10);
+  document.getElementById('bStatus').value='active';
+  document.getElementById('bNotes').value='';
+  document.getElementById('instrRows').innerHTML='';
+  instrCount=0;
+  addInstrRow();
+  document.getElementById('basketModal').classList.add('open');
+}
+
+function editBasket(){
+  const b=baskets.find(x=>x.id===activeBasketId);if(!b)return;
+  document.getElementById('editingId').value=b.id;
+  document.getElementById('modalTitle').textContent='Edit Basket';
+  document.getElementById('bName').value=b.name;
+  document.getElementById('bStrategy').value=b.strategy||'';
+  document.getElementById('bCapital').value=b.capital;
+  document.getElementById('bRebalance').value=b.rebalance||'monthly';
+  document.getElementById('bInception').value=b.inception||'';
+  document.getElementById('bStatus').value=b.status||'active';
+  document.getElementById('bNotes').value=b.notes||'';
+  document.getElementById('instrRows').innerHTML='';
+  instrCount=0;
+  (b.instruments||[]).forEach(i=>addInstrRow(i.tradingsymbol,i.exchange,i.target_pct,i.qty,i.avg_price));
+  if(!b.instruments?.length) addInstrRow();
+  document.getElementById('basketModal').classList.add('open');
+}
+
+function getInstruments(){
+  // Each instr-row has 4 inputs: [0]=symbol [1]=target% [2]=qty [3]=avg_price
+  // (select for exchange is NOT an input, so indices shift accordingly)
+  const rows=[];
+  document.querySelectorAll('#instrRows .instr-row').forEach(r=>{
+    const inputs=r.querySelectorAll('input');
+    const sel=r.querySelector('select');
+    const sym=(inputs[0]?.value||'').trim().toUpperCase();
+    if(!sym) return;
+    rows.push({
+      tradingsymbol: sym,
+      exchange:      sel?.value||'NSE',
+      target_pct:    parseFloat(inputs[1]?.value||0),
+      qty:           parseInt(inputs[2]?.value||0),
+      avg_price:     parseFloat(inputs[3]?.value||0)
+    });
+  });
+  return rows;
+}
+
+async function saveBasket(){
+  const name=document.getElementById('bName').value.trim();
+  const capital=parseFloat(document.getElementById('bCapital').value||0);
+  if(!name){toast('❌ Basket name is required');return;}
+  if(capital<=0){toast('❌ Enter a valid capital amount');return;}
+
+  const payload={
+    name, capital,
+    strategy:  document.getElementById('bStrategy').value.trim(),
+    rebalance: document.getElementById('bRebalance').value,
+    inception: document.getElementById('bInception').value,
+    status:    document.getElementById('bStatus').value,
+    notes:     document.getElementById('bNotes').value.trim(),
+    instruments: getInstruments()
+  };
+
+  const eid=document.getElementById('editingId').value;
+
+  try{
+    const url = eid ? `/api/ab/baskets/${eid}` : '/api/ab/baskets';
+    const method = eid ? 'PUT' : 'POST';
+    const data = await api(url, {method, body:JSON.stringify(payload)});
+    if(!data.ok){ toast('❌ '+(data.error||'Save failed')); return; }
+    closeModal('basketModal');
+    toast(eid ? '✅ Basket updated' : '✅ Basket created');
+    try{ await loadBaskets(); }catch(e2){ console.warn('reload after save:',e2); }
+    if(eid){ const b=baskets.find(x=>x.id===eid); if(b) renderHoldingsTable(b, livePricesCache[eid]||{}); }
+  }catch(e){
+    console.error('saveBasket error:',e);
+    toast('❌ '+(e.message||'Save failed'));
+  }
+}
+
+async function deleteBasket(){
+  const b=baskets.find(x=>x.id===activeBasketId);
+  if(!b||!confirm(`Delete "${b.name}"? This cannot be undone.`)) return;
+  await api(`/api/ab/baskets/${activeBasketId}`,{method:'DELETE',body:'{}',headers:{'Content-Type':'application/json'}});
+  toast('🗑 Basket deleted');
+  showDash();
+  await loadBaskets();
+}
+
+// ── Close modals on overlay click ─────────────────────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(el=>el.classList.remove('open'));});
+
+init();
+</script>
+</body>
+</html>

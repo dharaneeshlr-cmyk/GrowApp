@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinHub — Your Finance Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f0e0d;
+  --paper:#f5f0e8;
+  --cream:#ede7d9;
+  --cream2:#e4ddd0;
+  --gold:#c9a84c;
+  --gold-light:#e8d49a;
+  --gold-dark:#8a6d2f;
+  --white:#ffffff;
+  --shadow-sm:0 2px 8px rgba(15,14,13,.07);
+  --shadow:0 4px 20px rgba(15,14,13,.10);
+  --shadow-lg:0 12px 40px rgba(15,14,13,.16);
+  --shadow-xl:0 24px 64px rgba(15,14,13,.22);
+  --radius:18px;
+  --radius-sm:10px;
+  --transition:.22s cubic-bezier(.4,0,.2,1);
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── Top Nav ────────────────────────────────────────────────────────────────── */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(245,240,232,.88);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--cream2);
+  padding:0 2.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  height:64px;
+}
+.nav-brand{display:flex;align-items:center;gap:11px}
+.nav-logo{
+  width:38px;height:38px;
+  background:var(--ink);border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;box-shadow:0 4px 12px rgba(15,14,13,.2);
+  flex-shrink:0;
+}
+.nav-title{
+  font-family:'DM Serif Display',serif;
+  font-size:1.35rem;letter-spacing:-.02em;color:var(--ink);
+}
+.nav-title span{color:var(--gold-dark)}
+.nav-right{display:flex;align-items:center;gap:.75rem}
+.nav-date{font-size:.8rem;color:#aaa;letter-spacing:.03em}
+.btn-logout-nav{
+  background:none;border:1.5px solid var(--cream2);
+  color:#888;padding:6px 14px;border-radius:8px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;
+  text-decoration:none;display:flex;align-items:center;gap:5px;
+  transition:background var(--transition),color var(--transition),border-color var(--transition);
+}
+.btn-logout-nav:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* ── Hero ───────────────────────────────────────────────────────────────────── */
+.hero{
+  position:relative;overflow:hidden;
+  background:var(--ink);
+  padding:4rem 2.5rem 5.5rem;
+  text-align:center;
+}
+/* subtle grid overlay */
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(201,168,76,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,.06) 1px,transparent 1px);
+  background-size:44px 44px;
+  animation:gridDrift 30s linear infinite;
+}
+@keyframes gridDrift{from{background-position:0 0}to{background-position:44px 44px}}
+
+/* warm glow orbs */
+.hero-orb{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(201,168,76,.15) 0%,transparent 65%);
+}
+.orb1{width:500px;height:500px;top:-200px;left:-150px}
+.orb2{width:400px;height:400px;bottom:-180px;right:-100px}
+.orb3{width:300px;height:300px;top:50%;left:50%;transform:translate(-50%,-50%)}
+
+.hero-inner{position:relative;z-index:1;max-width:700px;margin:0 auto}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);
+  color:var(--gold-light);
+  padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:500;
+  letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:1.5rem;
+}
+.hero-badge::before{content:'✦';font-size:.65rem}
+.hero h1{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(2.2rem,5vw,3.4rem);
+  line-height:1.12;letter-spacing:-.03em;
+  color:var(--paper);margin-bottom:1rem;
+}
+.hero h1 em{color:var(--gold);font-style:normal}
+.hero-sub{
+  font-size:1rem;line-height:1.7;color:rgba(245,240,232,.6);
+  max-width:480px;margin:0 auto 2.5rem;
+}
+
+/* Quick stats strip */
+.hero-stats{
+  display:inline-flex;gap:0;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:14px;overflow:hidden;
+  backdrop-filter:blur(10px);
+}
+.hstat{
+  padding:.9rem 1.6rem;text-align:center;
+  border-right:1px solid rgba(255,255,255,.08);
+}
+.hstat:last-child{border-right:none}
+.hstat-val{
+  font-family:'DM Serif Display',serif;
+  font-size:1.4rem;color:var(--paper);line-height:1;
+  margin-bottom:3px;
+}
+.hstat-val.gold{color:var(--gold)}
+.hstat-lbl{font-size:.72rem;color:rgba(245,240,232,.45);text-transform:uppercase;letter-spacing:.08em}
+
+/* ── Wave divider ───────────────────────────────────────────────────────────── */
+.wave{
+  display:block;width:100%;height:60px;
+  background:var(--ink);
+  clip-path:ellipse(55% 100% at 50% 0%);
+  margin-bottom:-2px;
+}
+
+/* ── Main content ───────────────────────────────────────────────────────────── */
+.content{max-width:1200px;margin:0 auto;padding:3rem 2.5rem 5rem}
+
+/* Section header */
+.section-header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:1.75rem;
+}
+.section-label{
+  font-size:.72rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--gold-dark);margin-bottom:5px;
+}
+.section-title{
+  font-family:'DM Serif Display',serif;
+  font-size:1.75rem;letter-spacing:-.02em;color:var(--ink);
+}
+.section-count{
+  font-size:.82rem;color:#bbb;
+  background:var(--cream);padding:4px 12px;border-radius:20px;
+}
+
+/* ── Module Grid ────────────────────────────────────────────────────────────── */
+.modules-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:1.5rem;
+  margin-bottom:3.5rem;
+}
+
+/* ── Module Card ────────────────────────────────────────────────────────────── */
+.module-card{
+  background:var(--white);
+  border-radius:var(--radius);
+  padding:1.75rem;
+  box-shadow:var(--shadow);
+  border:1.5px solid transparent;
+  cursor:pointer;
+  text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;gap:0;
+  position:relative;overflow:hidden;
+  transition:transform var(--transition),box-shadow var(--transition),border-color var(--transition);
+}
+.module-card:hover{
+  transform:translateY(-5px);
+  box-shadow:var(--shadow-xl);
+}
+/* coloured left accent bar */
+.module-card::before{
+  content:'';
+  position:absolute;left:0;top:0;bottom:0;width:4px;
+  border-radius:var(--radius) 0 0 var(--radius);
+  background:var(--accent,var(--gold));
+  transition:width var(--transition);
+}
+.module-card:hover::before{width:6px}
+
+/* top row: icon + status badge */
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem}
+.card-icon-wrap{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+  background:var(--icon-bg,#f5f0e8);
+  flex-shrink:0;
+}
+.card-badge{
+  font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  padding:3px 10px;border-radius:20px;
+  display:flex;align-items:center;gap:4px;
+}
+.badge-live{background:#d8f3dc;color:#1e6640}
+.badge-live::before{content:'';width:6px;height:6px;border-radius:50%;background:#2d6a4f;display:inline-block}
+.badge-soon{background:#fce8d5;color:#7a3a10}
+.badge-new{background:#ead6f0;color:#5b1d70}
+
+/* card content */
+.card-name{
+  font-family:'DM Serif Display',serif;
+  font-size:1.2rem;letter-spacing:-.01em;
+  margin-bottom:.35rem;color:var(--ink);
+}
+.card-desc{font-size:.85rem;line-height:1.6;color:#888;margin-bottom:1.4rem;flex:1}
+
+/* mini stats row */
+.card-stats{
+  display:flex;gap:1rem;
+  padding:.75rem 0;
+  border-top:1px solid var(--cream);
+  margin-bottom:1.2rem;
+}
+.cstat{flex:1;text-align:center}
+.cstat-val{font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--ink);line-height:1}
+.cstat-lbl{font-size:.68rem;color:#bbb;text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
+
+/* CTA button */
+.card-cta{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--cta-bg,var(--ink));
+  color:var(--cta-fg,var(--paper));
+  padding:.75rem 1rem;border-radius:10px;
+  font-size:.88rem;font-weight:600;
+  transition:opacity .15s,transform .15s;
+}
+.module-card:hover .card-cta{opacity:.92;transform:translateX(2px)}
+.card-cta-arrow{font-size:1.1rem;transition:transform var(--transition)}
+.module-card:hover .card-cta-arrow{transform:translateX(5px)}
+
+/* Disabled / coming-soon card */
+.module-card.disabled{
+  cursor:default;opacity:.7;
+  pointer-events:none;
+}
+.module-card.coming-soon{
+  cursor:default;
+  background:var(--paper);
+  border:1.5px dashed var(--cream2);
+  box-shadow:none;
+}
+.module-card.coming-soon:hover{transform:none;box-shadow:none}
+.module-card.coming-soon::before{display:none}
+
+/* ── "Add module" placeholder ───────────────────────────────────────────────── */
+.add-module-card{
+  background:none;
+  border:2px dashed var(--cream2);
+  border-radius:var(--radius);
+  padding:1.75rem;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:.6rem;
+  min-height:220px;
+  color:#ccc;
+  cursor:default;
+  transition:border-color var(--transition),color var(--transition);
+}
+.add-icon{font-size:2rem;opacity:.35}
+.add-text{font-size:.88rem;font-weight:500;text-align:center;line-height:1.5}
+
+/* ── Activity Feed ──────────────────────────────────────────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start}
+.panel{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.panel-header{
+  padding:1.25rem 1.5rem;
+  border-bottom:1px solid var(--cream);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.panel-title{font-family:'DM Serif Display',serif;font-size:1rem}
+.panel-link{font-size:.8rem;color:var(--gold-dark);text-decoration:none;font-weight:500}
+.panel-link:hover{text-decoration:underline}
+
+/* Activity list */
+.activity-list{padding:.5rem 0}
+.activity-item{
+  display:flex;align-items:center;gap:12px;
+  padding:.7rem 1.5rem;
+  transition:background .15s;
+}
+.activity-item:hover{background:var(--paper)}
+.act-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:var(--gold);
+}
+.act-dot.income{background:#2d6a4f}
+.act-dot.expense{background:#9c2323}
+.act-dot.invest{background:#7b2d8b}
+.act-dot.insurance{background:#1d3557}
+.act-body{flex:1;min-width:0}
+.act-name{font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-meta{font-size:.75rem;color:#bbb;margin-top:1px}
+.act-amount{font-size:.88rem;font-weight:600;white-space:nowrap}
+.act-amount.green{color:#2d6a4f}
+.act-amount.red{color:#9c2323}
+.empty-feed{padding:2rem 1.5rem;text-align:center;color:#ccc;font-size:.85rem;font-style:italic}
+
+/* Quick-tip panel */
+.tip-panel{background:var(--ink);border-radius:var(--radius);padding:1.5rem;color:var(--paper);position:relative;overflow:hidden}
+.tip-panel::before{content:'💡';position:absolute;right:1.5rem;top:1.25rem;font-size:2.2rem;opacity:.12}
+.tip-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);font-weight:600;margin-bottom:.6rem}
+.tip-text{font-size:.88rem;line-height:1.7;opacity:.8}
+.tip-nav{display:flex;gap:6px;margin-top:1.25rem}
+.tip-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:background .2s}
+.tip-dot.active{background:var(--gold)}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+footer{
+  border-top:1px solid var(--cream);
+  padding:1.25rem 2.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.78rem;color:#ccc;
+}
+footer strong{color:#aaa}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media(max-width:1000px){.two-col{grid-template-columns:1fr}}
+@media(max-width:700px){
+  nav{padding:0 1.2rem}
+  .hero{padding:3rem 1.2rem 4.5rem}
+  .content{padding:2rem 1.2rem 4rem}
+  .hero-stats{flex-direction:column;width:100%}
+  .hstat{border-right:none;border-bottom:1px solid rgba(255,255,255,.08)}
+  .hstat:last-child{border-bottom:none}
+  .modules-grid{grid-template-columns:1fr}
+  footer{flex-direction:column;gap:.5rem;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">🏦</div>
+    <div class="nav-title">Fin<span>Hub</span></div>
+  </div>
+  <div class="nav-right">
+    <span class="nav-date" id="navDate"></span>
+    <a href="/logout" class="btn-logout-nav">🚪 Sign Out</a>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="orb1 hero-orb"></div>
+  <div class="orb2 hero-orb"></div>
+  <div class="orb3 hero-orb"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">Personal Finance Command Centre</div>
+    <h1>Welcome back,<br><em>Admin</em> 👋</h1>
+    <p class="hero-sub">All your financial tools in one place. Track, plan, analyse, and grow — everything under one roof.</p>
+    <div class="hero-stats">
+      <div class="hstat">
+        <div class="hstat-val gold" id="heroModules">5</div>
+        <div class="hstat-lbl">Active Modules</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val" id="heroEntries">—</div>
+        <div class="hstat-lbl">Total Entries</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val" id="heroMonth">—</div>
+        <div class="hstat-lbl">This Month</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="wave"></div>
+
+<!-- ── Main ── -->
+<div class="content">
+
+  <!-- Modules section -->
+  <div class="section-header">
+    <div>
+      <div class="section-label">Your Toolkit</div>
+      <div class="section-title">Finance Modules</div>
+    </div>
+    <div class="section-count" id="moduleCount">5 active</div>
+  </div>
+
+  <div class="modules-grid" id="modulesGrid">
+
+    <!-- ── BudgetCraft Card ── -->
+    <a href="/budget" class="module-card" style="--accent:#c9a84c;--icon-bg:#fdf6e3;--cta-bg:#0f0e0d;--cta-fg:#f5f0e8">
+      <div class="card-top">
+        <div class="card-icon-wrap">💰</div>
+        <span class="card-badge badge-live">● Live</span>
+      </div>
+      <div class="card-name">BudgetCraft</div>
+      <div class="card-desc">Monthly budget planner — track income, insurance, investments, expenses and discretionary spending with charts and Excel exports.</div>
+      <div class="card-stats" id="bc-stats">
+        <div class="cstat">
+          <div class="cstat-val" id="bc-income">₹—</div>
+          <div class="cstat-lbl">Income</div>
+        </div>
+        <div class="cstat">
+          <div class="cstat-val" id="bc-outflow">₹—</div>
+          <div class="cstat-lbl">Outflow</div>
+        </div>
+        <div class="cstat">
+          <div class="cstat-val" id="bc-net">—</div>
+          <div class="cstat-lbl">Net</div>
+        </div>
+      </div>
+      <div class="card-cta">
+        <span>Open BudgetCraft</span>
+        <span class="card-cta-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- ── Investment Tracker Card ── -->
+    <a href="/investments" class="module-card" style="--accent:#7b2d8b;--icon-bg:#ead6f0;--cta-bg:#7b2d8b;--cta-fg:#fff">
+      <div class="card-top">
+        <div class="card-icon-wrap">📊</div>
+        <span class="card-badge badge-live">● Live</span>
+      </div>
+      <div class="card-name">Investment Tracker</div>
+      <div class="card-desc">Kite Connect powered — fetch live holdings from Zerodha, analyse P&L, sector allocation, top gainers/losers and portfolio trend over time.</div>
+      <div class="card-stats">
+        <div class="cstat"><div class="cstat-val" id="inv-value">₹—</div><div class="cstat-lbl">Portfolio</div></div>
+        <div class="cstat"><div class="cstat-val" id="inv-pnl">—</div><div class="cstat-lbl">P&L</div></div>
+        <div class="cstat"><div class="cstat-val" id="inv-count">—</div><div class="cstat-lbl">Holdings</div></div>
+      </div>
+      <div class="card-cta">
+        <span>Open Investment Tracker</span>
+        <span class="card-cta-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- ── Investment Strategies Card ── -->
+    <a href="/strategies" class="module-card" style="--accent:#1d3557;--icon-bg:#d6e4f0;--cta-bg:#1d3557;--cta-fg:#fff">
+      <div class="card-top">
+        <div class="card-icon-wrap">🧭</div>
+        <span class="card-badge badge-live">● Live</span>
+      </div>
+      <div class="card-name">Investment Strategies</div>
+      <div class="card-desc">GrowGuru rulebooks — Factor Investing (Static 5-ETF system) and S8 Dynamic System (regime-driven allocation). Full rules, ETFs, performance data.</div>
+      <div class="card-stats">
+        <div class="cstat"><div class="cstat-val" style="color:#1d3557">2</div><div class="cstat-lbl">Strategies</div></div>
+        <div class="cstat"><div class="cstat-val" style="color:#2d6a4f">19.1%</div><div class="cstat-lbl">Best CAGR</div></div>
+        <div class="cstat"><div class="cstat-val" style="color:#7b2d8b">5 ETFs</div><div class="cstat-lbl">Instruments</div></div>
+      </div>
+      <div class="card-cta">
+        <span>Open Strategies</span>
+        <span class="card-cta-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- ── Net Worth Card ── -->
+    <a href="/networth" class="module-card" style="--accent:#0d6e6e;--icon-bg:#d0f0f0;--cta-bg:#0d6e6e;--cta-fg:#fff">
+      <div class="card-top">
+        <div class="card-icon-wrap">💼</div>
+        <span class="card-badge badge-live">● Live</span>
+      </div>
+      <div class="card-name">Net Worth</div>
+      <div class="card-desc">Track all assets across accounts — EPF, FD, Equity, Gold, Crypto and more. Visualise allocation, plus a year-by-year future planner with SWP projections.</div>
+      <div class="card-stats">
+        <div class="cstat"><div class="cstat-val" id="nw-total" style="color:#0d6e6e">₹—</div><div class="cstat-lbl">Total NW</div></div>
+        <div class="cstat"><div class="cstat-val" id="nw-assets">—</div><div class="cstat-lbl">Assets</div></div>
+        <div class="cstat"><div class="cstat-val" id="nw-accts">—</div><div class="cstat-lbl">Accounts</div></div>
+      </div>
+      <div class="card-cta">
+        <span>Open Net Worth</span>
+        <span class="card-cta-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- ── AutoBasket Card ── -->
+    <a href="/autobasket" class="module-card" onclick="return checkNav('/autobasket',event)" style="--accent:#9c2323;--icon-bg:#f5d6d6;--cta-bg:#9c2323;--cta-fg:#fff">
+      <div class="card-top">
+        <div class="card-icon-wrap">🧺</div>
+        <span class="card-badge badge-live">● Live</span>
+      </div>
+      <div class="card-name">AutoBasket</div>
+      <div class="card-desc">Create strategy baskets, track NAV from Base 100, auto-rebalance holdings and place orders via Kite Connect. Top/bottom performer dashboard.</div>
+      <div class="card-stats">
+        <div class="cstat"><div class="cstat-val" id="ab-baskets" style="color:#9c2323">—</div><div class="cstat-lbl">Baskets</div></div>
+        <div class="cstat"><div class="cstat-val" id="ab-value">₹—</div><div class="cstat-lbl">Total Value</div></div>
+        <div class="cstat"><div class="cstat-val" id="ab-pnl">₹—</div><div class="cstat-lbl">P&amp;L</div></div>
+      </div>
+      <div class="card-cta"><span>Open AutoBasket</span><span class="card-cta-arrow">→</span></div>
+    </a>
+
+    <!-- ── Goal Planner coming soon ── -->
+    <div class="module-card coming-soon">
+      <div class="card-top">
+        <div class="card-icon-wrap" style="background:#f5f0ff;font-size:22px">🎯</div>
+        <span class="card-badge badge-soon">Coming Soon</span>
+      </div>
+      <div class="card-name">Goal Planner</div>
+      <div class="card-desc">Set financial goals — emergency fund, house, car, retirement — and track your monthly progress toward each one.</div>
+      <div class="card-cta" style="background:#f0f0ee;color:#aaa">
+        <span>In Development</span>
+        <span>🔒</span>
+      </div>
+    </div>
+
+    <!-- ── Add new module placeholder ── -->
+    <div class="add-module-card">
+      <div class="add-icon">＋</div>
+      <div class="add-text">New modules will<br>appear here</div>
+    </div>
+
+  </div>
+
+  <!-- Activity + Tips row -->
+  <div class="section-header">
+    <div>
+      <div class="section-label">Overview</div>
+      <div class="section-title">Recent Activity</div>
+    </div>
+    <a href="/budget" class="panel-link">View all in BudgetCraft →</a>
+  </div>
+
+  <div class="two-col">
+    <!-- Activity feed -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Latest Budget Entries</span>
+        <span id="feedMonth" style="font-size:.78rem;color:#bbb"></span>
+      </div>
+      <div class="activity-list" id="activityFeed">
+        <div class="empty-feed">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Tips panel -->
+    <div class="tip-panel">
+      <div class="tip-label">💡 Finance Tip</div>
+      <div class="tip-text" id="tipText">Loading tip…</div>
+      <div class="tip-nav" id="tipNav"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Footer ── -->
+<footer>
+  <span><strong>FinHub</strong> · Personal Finance Portal · Local Edition</span>
+  <span>Data stored locally in <strong>budget.db</strong></span>
+</footer>
+
+<script>
+// ── Date ──────────────────────────────────────────────────────────────────────
+const now   = new Date();
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+const MS     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const curMonth = now.getMonth();
+const curYear  = now.getFullYear();
+
+document.getElementById('navDate').textContent =
+  now.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+document.getElementById('feedMonth').textContent = `${MONTHS[curMonth]} ${curYear}`;
+
+// ── Finance tips ──────────────────────────────────────────────────────────────
+const TIPS = [
+  'The 50/30/20 rule: 50% on needs, 30% on wants, 20% on savings & investments. A simple framework that works.',
+  'Automate your SIPs on salary day — pay yourself first, then budget the rest. Even ₹1,000/month compounded over 20 years is powerful.',
+  'An emergency fund of 3–6 months of expenses is your financial safety net before you begin aggressive investing.',
+  'Review your insurance coverage annually. Under-insured health and life cover is one of the biggest financial risks for Indian families.',
+  'Avoid lifestyle inflation — when your salary increases, increase your investments first before upgrading your lifestyle.',
+  'Track every rupee for just 3 months. Awareness alone usually cuts discretionary spending by 15–20%.',
+];
+let tipIdx = 0;
+
+function renderTips(){
+  const nav = document.getElementById('tipNav');
+  nav.innerHTML = TIPS.map((_,i) =>
+    `<div class="tip-dot ${i===tipIdx?'active':''}" onclick="setTip(${i})"></div>`
+  ).join('');
+  document.getElementById('tipText').textContent = TIPS[tipIdx];
+}
+function setTip(i){ tipIdx=i; renderTips(); }
+renderTips();
+// Auto-rotate tips every 6 seconds
+setInterval(()=>{ tipIdx=(tipIdx+1)%TIPS.length; renderTips(); }, 6000);
+
+// ── Format helpers ────────────────────────────────────────────────────────────
+function fmt(n){return '₹'+Math.abs(n).toLocaleString('en-IN',{maximumFractionDigits:0});}
+function fmtS(n){return (n<0?'−':'')+fmt(n);}
+
+// ── Load BudgetCraft stats for this month ─────────────────────────────────────
+async function loadStats(){
+  try{
+    const r = await fetch(`/api/entries?year=${curYear}&month=${curMonth}`);
+    if(!r.ok) return;
+    const data = await r.json();
+
+    // Calculate totals
+    const CATS   = ['income','insurance','investments','expenses','discretionary'];
+    const OUT    = ['insurance','investments','expenses','discretionary'];
+    const totals = {};
+    CATS.forEach(c => totals[c] = (data[c]||[]).reduce((s,e)=>s+e.amount,0));
+    const income  = totals.income;
+    const outflow = OUT.reduce((s,c)=>s+totals[c],0);
+    const net     = income - outflow;
+
+    // Hero stats
+    const allEntries = CATS.reduce((s,c)=>(data[c]||[]).length+s, 0);
+    document.getElementById('heroEntries').textContent = allEntries;
+    document.getElementById('heroMonth').textContent   = income > 0 ? fmt(income) : '₹0';
+
+    // BudgetCraft card mini-stats
+    document.getElementById('bc-income').textContent  = fmt(income);
+    document.getElementById('bc-outflow').textContent = fmt(outflow);
+    const netEl = document.getElementById('bc-net');
+    netEl.textContent  = fmtS(net);
+    netEl.style.color  = net >= 0 ? '#2d6a4f' : '#9c2323';
+
+    // Activity feed — last 8 entries across all categories
+    const dotClass = {income:'income',insurance:'insurance',investments:'invest',expenses:'expense',discretionary:'expense'};
+    const all = [];
+    CATS.forEach(c=>(data[c]||[]).forEach(e=>all.push({...e,cat:c})));
+    // sort by amount desc as a proxy (no timestamp in API response)
+    all.sort((a,b)=>b.amount-a.amount);
+    const feed = document.getElementById('activityFeed');
+    if(all.length === 0){
+      feed.innerHTML = '<div class="empty-feed">No entries yet for this month.<br>Open BudgetCraft to add your first entry.</div>';
+    } else {
+      const CAT_LABEL = {income:'Income',insurance:'Insurance',investments:'Investments',expenses:'Expenses',discretionary:'Discretionary'};
+      feed.innerHTML = all.slice(0,8).map(e=>`
+        <div class="activity-item">
+          <div class="act-dot ${dotClass[e.cat]}"></div>
+          <div class="act-body">
+            <div class="act-name">${escHtml(e.name)}</div>
+            <div class="act-meta">${CAT_LABEL[e.cat]}${e.note?' · '+escHtml(e.note):''}</div>
+          </div>
+          <div class="act-amount ${e.cat==='income'?'green':'red'}">${fmt(e.amount)}</div>
+        </div>`).join('');
+    }
+  } catch(err){
+    document.getElementById('activityFeed').innerHTML =
+      '<div class="empty-feed">Could not load entries.</div>';
+  }
+}
+
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+loadStats();
+
+// Load Investment Tracker mini-stats for home card
+async function loadInvStats(){
+  try{
+    const r=await fetch('/api/kite/holdings');if(!r.ok)return;const d=await r.json();
+    if(!d.holdings||!d.holdings.length)return;
+    const tv=d.holdings.reduce((s,h)=>s+parseFloat(h.last_price||0)*parseInt(h.quantity||0),0);
+    const tp=d.holdings.reduce((s,h)=>s+parseFloat(h.pnl||0),0);
+    const fv=el=>tv>=1e7?'₹'+(tv/1e7).toFixed(1)+'Cr':tv>=1e5?'₹'+(tv/1e5).toFixed(1)+'L':'₹'+Math.round(tv).toLocaleString('en-IN');
+    const fp=v=>Math.abs(v)>=1e7?'₹'+(Math.abs(v)/1e7).toFixed(1)+'Cr':Math.abs(v)>=1e5?'₹'+(Math.abs(v)/1e5).toFixed(1)+'L':'₹'+Math.round(Math.abs(v)).toLocaleString('en-IN');
+    const vel=document.getElementById('inv-value');if(vel)vel.textContent=fv(tv);
+    const pel=document.getElementById('inv-pnl');if(pel){pel.textContent=(tp>=0?'+':'-')+fp(tp);pel.style.color=tp>=0?'#2d6a4f':'#9c2323';}
+    const cel=document.getElementById('inv-count');if(cel)cel.textContent=d.holdings.length;
+  }catch(e){}
+}
+loadInvStats();
+
+// Load Net Worth mini-stats
+async function loadNWStats(){
+  try{
+    const r=await fetch('/api/nw/assets');if(!r.ok)return;const d=await r.json();
+    if(!d||!d.length)return;
+    const tot=d.reduce((s,a)=>s+parseFloat(a.amount),0);
+    const accts=new Set(d.map(a=>a.account)).size;
+    const tv=document.getElementById('nw-total');
+    if(tv)tv.textContent=tot>=1e7?'₹'+(tot/1e7).toFixed(2)+'Cr':tot>=1e5?'₹'+(tot/1e5).toFixed(1)+'L':'₹'+Math.round(tot).toLocaleString('en-IN');
+    const av=document.getElementById('nw-assets');if(av)av.textContent=d.length;
+    const ac=document.getElementById('nw-accts');if(ac)ac.textContent=accts;
+  }catch(e){}
+}
+loadNWStats();
+
+async function loadABStats(){
+  try{
+    const r=await fetch('/api/ab/summary');if(!r.ok)return;const d=await r.json();
+    const bv=document.getElementById('ab-baskets');if(bv)bv.textContent=d.basket_count;
+    const vv=document.getElementById('ab-value');
+    if(vv)vv.textContent=d.total_value>=1e7?'₹'+(d.total_value/1e7).toFixed(2)+'Cr':d.total_value>=1e5?'₹'+(d.total_value/1e5).toFixed(1)+'L':'₹'+Math.round(d.total_value).toLocaleString('en-IN');
+    const pv=document.getElementById('ab-pnl');
+    if(pv){const p=d.total_pnl;pv.textContent=(p>=0?'+':'-')+'₹'+Math.abs(p>=1e5?+(Math.abs(p)/1e5).toFixed(1)+'L':Math.round(Math.abs(p)).toLocaleString('en-IN'));pv.style.color=p>=0?'#2d6a4f':'#9c2323';}
+  }catch(e){}
+}
+loadABStats();
+
+async function checkNav(url, e){
+  // Quick HEAD check — if route doesn't exist, show helpful message
+  try{
+    const r = await fetch(url, {method:'HEAD', credentials:'same-origin'});
+    if(r.status === 404){
+      e.preventDefault();
+      alert('⚠️ AutoBasket module not loaded.\n\nPlease:\n1. Stop Flask (Ctrl+C)\n2. Replace ALL files with the new zip\n3. Run: bash run.sh\n4. Hard-refresh browser (Cmd+Shift+R)\n\nLook for: 🧺 AutoBasket: 10 routes registered');
+      return false;
+    }
+  }catch(err){}
+  return true;
+}
+</script>
+</body>
+</html>
