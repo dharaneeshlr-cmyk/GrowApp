@@ -1894,4 +1894,4 @@ if __name__ == '__main__':
     print("👥 Multi-user mode — /register to create accounts")
     ab_routes = [r for r in app.url_map.iter_rules() if '/ab/' in r.rule]
     print(f"🧺 AutoBasket: {len(ab_routes)} routes registered" if ab_routes else "❌ AutoBasket routes NOT found!")
-    app.run(debug=debug, host=host, port=port)
+    app.run(debug=false, host=host, port=port)
