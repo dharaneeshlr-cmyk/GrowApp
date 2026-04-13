@@ -225,19 +225,41 @@ def init_db():
     """)
     conn.commit()
     # ── Safe migrations for existing databases ────────────────────────────────
-    migrations = [
+    # Add user_id column to tables that need it (silently skip if already exists)
+    col_migrations = [
         "ALTER TABLE entries ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
         "ALTER TABLE credit_cards ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
         "ALTER TABLE loans ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
         "ALTER TABLE networth_assets ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
         "ALTER TABLE networth_plan ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
         "ALTER TABLE ab_baskets ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
-        "ALTER TABLE kite_config ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
         "ALTER TABLE kite_snapshots ADD COLUMN user_id TEXT NOT NULL DEFAULT 'default'",
     ]
-    for m in migrations:
+    for m in col_migrations:
         try: conn.execute(m); conn.commit()
         except Exception: pass  # column already exists
+
+    # kite_config needs special handling: old schema has PRIMARY KEY (key) only.
+    # We need PRIMARY KEY (user_id, key). Rebuild the table if needed.
+    try:
+        cols = [r[1] for r in conn.execute('PRAGMA table_info(kite_config)').fetchall()]
+        if 'user_id' not in cols:
+            # Old schema — migrate data then rebuild
+            conn.executescript('''
+                ALTER TABLE kite_config RENAME TO kite_config_old;
+                CREATE TABLE kite_config (
+                    user_id TEXT NOT NULL DEFAULT 'default',
+                    key     TEXT NOT NULL,
+                    value   TEXT NOT NULL,
+                    PRIMARY KEY (user_id, key)
+                );
+                INSERT INTO kite_config (user_id, key, value)
+                    SELECT 'default', key, value FROM kite_config_old;
+                DROP TABLE kite_config_old;
+            ''')
+            conn.commit()
+    except Exception:
+        pass  # table doesn't exist yet — init_kite_db will create it
 
     # ── Seed default admin if no users exist ──────────────────────────────────
     existing = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
@@ -305,16 +327,20 @@ def login_page():
 
 @app.route('/login', methods=['POST'])
 def do_login():
-    username = request.form.get('username','').strip().lower()
-    password = request.form.get('password','')
-    user = q('SELECT * FROM users WHERE LOWER(username)=?', (username,), fetchone=True)
-    if user and verify_password(password, user['password_hash']):
-        session.permanent = True
-        session['user_id']   = user['id']
-        session['username']  = user['username']
-        session['is_admin']  = bool(user['is_admin'])
-        return redirect(url_for('home'))
-    return render_template('login.html', error='Invalid username or password.', allow_signup=ALLOW_SIGNUP)
+    try:
+        username = request.form.get('username','').strip().lower()
+        password = request.form.get('password','')
+        user = q('SELECT * FROM users WHERE LOWER(username)=?', (username,), fetchone=True)
+        if user and verify_password(password, user['password_hash']):
+            session.permanent = True
+            session['user_id']   = user['id']
+            session['username']  = user['username']
+            session['is_admin']  = bool(user['is_admin'])
+            return redirect(url_for('home'))
+        return render_template('login.html', error='Invalid username or password.', allow_signup=ALLOW_SIGNUP)
+    except Exception as e:
+        import traceback as _tb; _tb.print_exc()
+        return render_template('login.html', error=f'Login error: {e}', allow_signup=ALLOW_SIGNUP)
 
 # ── Register ───────────────────────────────────────────────────────────────────
 @app.route('/register', methods=['GET'])
@@ -328,34 +354,58 @@ def register_page():
 def do_register():
     if not ALLOW_SIGNUP:
         return redirect(url_for('login_page'))
-    username = request.form.get('username','').strip()
-    email    = request.form.get('email','').strip().lower()
-    password = request.form.get('password','')
-    confirm  = request.form.get('confirm','')
-    error = None
-    if not username or len(username) < 3:
-        error = 'Username must be at least 3 characters.'
-    elif not password or len(password) < 6:
-        error = 'Password must be at least 6 characters.'
-    elif password != confirm:
-        error = 'Passwords do not match.'
-    elif q('SELECT id FROM users WHERE LOWER(username)=?', (username.lower(),), fetchone=True):
-        error = 'Username already taken.'
-    if error:
-        return render_template('register.html', error=error)
-    uid_new = str(uuid.uuid4())
-    q('INSERT INTO users (id,username,email,password_hash) VALUES (?,?,?,?)',
-      (uid_new, username, email, hash_password(password)))
-    session.permanent = True
-    session['user_id']  = uid_new
-    session['username'] = username
-    session['is_admin'] = False
-    return redirect(url_for('home'))
+    try:
+        username = request.form.get('username','').strip()
+        email    = request.form.get('email','').strip().lower()
+        password = request.form.get('password','')
+        confirm  = request.form.get('confirm','')
+        error = None
+        if not username or len(username) < 3:
+            error = 'Username must be at least 3 characters.'
+        elif not password or len(password) < 6:
+            error = 'Password must be at least 6 characters.'
+        elif password != confirm:
+            error = 'Passwords do not match.'
+        elif q('SELECT id FROM users WHERE LOWER(username)=?', (username.lower(),), fetchone=True):
+            error = 'Username already taken.'
+        if error:
+            return render_template('register.html', error=error)
+        uid_new = str(uuid.uuid4())
+        q('INSERT INTO users (id,username,email,password_hash) VALUES (?,?,?,?)',
+          (uid_new, username, email, hash_password(password)))
+        session.permanent = True
+        session['user_id']  = uid_new
+        session['username'] = username
+        session['is_admin'] = False
+        return redirect(url_for('home'))
+    except Exception as e:
+        import traceback as _tb
+        _tb.print_exc()
+        return render_template('register.html',
+            error=f'Registration failed: {e}. Please try again or contact admin.')
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login_page'))
+
+@app.errorhandler(500)
+def internal_error(e):
+    import traceback as _tb
+    tb = _tb.format_exc()
+    print('500 ERROR:', tb)
+    # Return JSON for API calls, HTML for page requests
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Internal server error', 'detail': str(e)}), 500
+    return f'''<!DOCTYPE html><html><head><title>Error — FinHub</title>
+<style>body{{font-family:sans-serif;padding:2rem;background:#f5f0e8}}
+pre{{background:#fff;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.85rem;border:1px solid #ddd}}
+a{{color:#c9a84c}}</style></head><body>
+<h2>⚠️ Something went wrong</h2>
+<p>Please <a href="/login">sign in again</a> or <a href="javascript:history.back()">go back</a>.</p>
+<details><summary style="cursor:pointer;color:#999;font-size:.85rem">Technical details</summary>
+<pre>{str(e)}</pre></details>
+</body></html>''', 500
 
 # ── Budget entries API ────────────────────────────────────────────────────────
 @app.route('/api/entries', methods=['GET'])
